@@ -1,0 +1,47 @@
+{
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbopack",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "autoprefixer": "10.4.20",
+    "bcryptjs": "^3.0.2",
+    "cldr-data": "^36.0.4",
+    "cldrjs": "^0.5.5",
+    "clsx": "^2.1.1",
+    "date-fns": "^2.30.0",
+    "globalize": "^1.7.0",
+    "next": "^15.3.4",
+    "next-auth": "5.0.0-beta.28",
+    "postcss": "8.5.1",
+    "postgres": "^3.4.6",
+    "react": "18.2.0",
+    "react-big-calendar": "^1.19.4",
+    "react-dom": "18.2.0",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.7.3",
+    "use-debounce": "^10.0.4",
+    "zod": "^3.25.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "22.10.7",
+    "@types/react": "^19.1.8",
+    "@types/react-big-calendar": "^1.16.2",
+    "@types/react-dom": "^19.1.6",
+    "eslint": "^9.29.0",
+    "eslint-config-next": "15.4.0-canary.51",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.34.1"
+  },
+  "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
+}

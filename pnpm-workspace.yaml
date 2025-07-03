@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - bcrypt
+  - sharp
+onlyBuiltDependencies:
+  - bcrypt
+  - cldr-data
+  - unrs-resolver
