@@ -31,6 +31,26 @@ const myEventsList0 = [
   },
 ];
 
+
+const messages = {
+  date: 'Fecha',
+  time: 'Hora',
+  event: 'Evento',
+  allDay: 'Todo el día',
+  week: 'Semana',
+  work_week: 'Semana laboral',
+  day: 'Día',
+  month: 'Mes',
+  previous: 'Anterior',
+  next: 'Siguiente',
+  yesterday: 'Ayer',
+  tomorrow: 'Mañana',
+  today: 'Hoy',
+  agenda: 'Agenda',
+  noEventsInRange: 'No hay eventos en este rango.',
+  showMore: (total: number) => `+ Ver más (${total})`,
+};
+
 function App() {
   const memoLocalizer = useMemo(() => localizer, []);
   return (
@@ -47,6 +67,7 @@ function App() {
         views={["month", "week", "work_week", "day", "agenda"]}
         toolbar={true}
         popup={true}
+        messages={messages}
       />
     </div>
   );
