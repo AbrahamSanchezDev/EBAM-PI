@@ -8,7 +8,7 @@ export default function SideNav() {
   return (
     <div className="flex h-full  flex-col px-3 py-4 md:px-2">
       <Link
-        className="mb-2 flex h-25 items-end justify-center rounded-md bg-black p-4 md:h-50"
+        className="mb-2 flex h-25 items-end justify-center rounded-md bg-gray-500 p-4 md:h-50"
         href="/"
       >
         {/* Responsive: logo a la izquierda del nombre en móvil, en columna en md+ */}
