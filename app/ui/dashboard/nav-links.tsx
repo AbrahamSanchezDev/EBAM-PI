@@ -19,7 +19,7 @@ const links = [
     icon: DocumentDuplicateIcon,
   },
   { name: "Customers", href: "/dashboard/customers", icon: UserGroupIcon },
-  { name: "Consultas", href: "/dashboard/consultas", icon: GlobeAmericasIcon },
+  { name: "Configuracion", href: "/dashboard/consultas", icon: GlobeAmericasIcon },
 ];
 
 export default function NavLinks() {

@@ -37,7 +37,7 @@ export default function Page() {
   const memoLocalizer = useMemo(() => localizer, []);
   return (
     <div style={{ padding: 24 }}>
-      <h1>Calendario de prueba</h1>
+      <h1>Calendario de 9A</h1>
       {BigCalendar && (
         // @ts-ignore
         // Usar createElement para evitar error de tipos con JSX

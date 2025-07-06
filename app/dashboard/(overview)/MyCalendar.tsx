@@ -51,11 +51,11 @@ const messages = {
   showMore: (total: number) => `+ Ver más (${total})`,
 };
 
-function App() {
+export function MyCalendar() {
   const memoLocalizer = useMemo(() => localizer, []);
   return (
     <div style={{ padding: 24 }}>
-      <h1>Calendario de prueba</h1>
+      <h1>Calendario de 9A</h1>
       <Calendar
         localizer={memoLocalizer}
         events={myEventsList0}
@@ -72,6 +72,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
-export { App as MyCalendar };
