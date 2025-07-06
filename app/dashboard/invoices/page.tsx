@@ -5,6 +5,7 @@ import { lusitana } from "@/app/ui/fonts";
 import { InvoicesTableSkeleton } from "@/app/ui/skeletons";
 import { Suspense } from "react";
 import { Metadata } from "next";
+import RFIDReader from "@/app/esp32/RFIDReader";
 
 export const metadata: Metadata = {
   title: 'Invoices',
@@ -34,6 +35,10 @@ export default async function Page(props: {
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
+
+      <h1>ESP32</h1>
+
+      <RFIDReader />
     </div>
   );
 }
