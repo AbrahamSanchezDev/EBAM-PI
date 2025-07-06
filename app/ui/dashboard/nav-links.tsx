@@ -3,7 +3,9 @@ import {
   UserGroupIcon,
   HomeIcon,
   DocumentDuplicateIcon,
-  GlobeAmericasIcon
+  GlobeAmericasIcon,
+  WrenchScrewdriverIcon,
+  IdentificationIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,12 +16,16 @@ import clsx from "clsx";
 const links = [
   { name: "Home", href: "/dashboard", icon: HomeIcon },
   {
-    name: "Invoices",
-    href: "/dashboard/invoices",
-    icon: DocumentDuplicateIcon,
+    name: "Perfiles",
+    href: "/dashboard/perfiles",
+    icon: IdentificationIcon,
   },
-  { name: "Customers", href: "/dashboard/customers", icon: UserGroupIcon },
-  { name: "Configuracion", href: "/dashboard/consultas", icon: GlobeAmericasIcon },
+  { name: "Mapas", href: "/dashboard/mapas", icon: GlobeAmericasIcon },
+  {
+    name: "Configuracion",
+    href: "/dashboard/consultas",
+    icon: WrenchScrewdriverIcon,
+  },
 ];
 
 export default function NavLinks() {
