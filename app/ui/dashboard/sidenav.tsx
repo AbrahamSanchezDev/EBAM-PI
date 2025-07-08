@@ -8,21 +8,32 @@ export default function SideNav() {
   return (
     <div className="flex h-full  flex-col px-3 py-4 md:px-2">
       <Link
-        className="mb-2 flex h-25 items-end justify-center rounded-md bg-gray-500 p-4 md:h-50"
+        className="mb-2 flex h-25 items-end justify-center rounded-md p-4 md:h-50"
         href="/"
       >
         {/* Responsive: logo a la izquierda del nombre en móvil, en columna en md+ */}
-        <div className="w-40 text-white md:w-50 flex flex-row md:flex-col justify-center items-center">
+        <div className="w-40 text-black md:w-50 flex flex-row md:flex-col justify-center items-center">
           <img
-            src="/logo EBAM.png"
+            src="/logo 2.png"
             alt="Logo EBAM"
             className="h-12 w-12 md:h-20 md:w-20 mr-2 md:mb-2 md:mr-0"
           />
-          <p className="text-[28px] md:text-[44px]">EBAM</p>
+          <p
+            className="text-[28px] md:text-[44px] font-extrabold"
+            style={{
+              fontFamily: " Sono, sans-serif",
+              fontWeight: 800,
+            }}
+          >
+            EBAM
+          </p>
         </div>
       </Link>
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
+        <NavLinks
+          activeClassName="!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold"
+          iconClassName="text-[#1d4a7a]"
+        />
         <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
         <form
           action={async () => {
