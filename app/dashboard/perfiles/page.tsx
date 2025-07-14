@@ -21,7 +21,14 @@ export default function Page(props: {}) {
           throw new Error("Error al obtener los datos");
         }
         const data = await response.json();
-        setScans(data);
+
+        // Organizar los datos del más nuevo al más viejo basado en el timestamp
+        const sortedData = data.sort(
+          (a: Scan, b: Scan) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        setScans(sortedData);
       } catch (err) {
         console.error("Error fetching scans:", err);
         setError("No se pudo conectar a la base de datos");
@@ -92,12 +99,12 @@ export default function Page(props: {}) {
           </ul>
         </div>
       )}
-      <button
+      {/* <button
         onClick={handleTestRFIDPost}
         className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
         Ejecutar Prueba RFID
-      </button>
+      </button> */}
     </div>
   );
 }
