@@ -16,6 +16,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
     "globalize": "^1.7.0",
+    "mongodb": "^6.17.0",
     "next": "^15.3.4",
     "next-auth": "5.0.0-beta.28",
     "postcss": "8.5.1",
