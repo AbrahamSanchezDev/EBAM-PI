@@ -1,53 +1,56 @@
-import { useMemo } from 'react';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import es from 'date-fns/locale/es';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { myEventsList } from './myEventsList';
+import { useMemo } from "react";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import es from "date-fns/locale/es";
+import { format, parse, startOfWeek, getDay, Locale } from "date-fns";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import { myEventsList } from "./myEventsList";
 
 const locales = {
   es: es,
 };
 
-
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date, options) => startOfWeek(date, { ...options, locale: es }),
+  startOfWeek: (
+    date: number | Date,
+    options:
+      | { locale?: Locale; weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6 }
+      | undefined
+  ) => startOfWeek(date, { ...options, locale: es }),
   getDay,
   locales,
 });
 
 const myEventsList0 = [
   {
-    title: 'Evento de ejemplo',
+    title: "Evento de ejemplo",
     start: new Date(2025, 6, 2, 10, 0),
     end: new Date(2025, 6, 2, 12, 0),
   },
   {
-    title: 'Reunión importante',
+    title: "Reunión importante",
     start: new Date(2025, 6, 3, 14, 0),
     end: new Date(2025, 6, 3, 15, 30),
   },
 ];
 
-
 const messages = {
-  date: 'Fecha',
-  time: 'Hora',
-  event: 'Evento',
-  allDay: 'Todo el día',
-  week: 'Semana',
-  work_week: 'Semana laboral',
-  day: 'Día',
-  month: 'Mes',
-  previous: 'Anterior',
-  next: 'Siguiente',
-  yesterday: 'Ayer',
-  tomorrow: 'Mañana',
-  today: 'Hoy',
-  agenda: 'Agenda',
-  noEventsInRange: 'No hay eventos en este rango.',
+  date: "Fecha",
+  time: "Hora",
+  event: "Evento",
+  allDay: "Todo el día",
+  week: "Semana",
+  work_week: "Semana laboral",
+  day: "Día",
+  month: "Mes",
+  previous: "Anterior",
+  next: "Siguiente",
+  yesterday: "Ayer",
+  tomorrow: "Mañana",
+  today: "Hoy",
+  agenda: "Agenda",
+  noEventsInRange: "No hay eventos en este rango.",
   showMore: (total: number) => `+ Ver más (${total})`,
 };
 
