@@ -1,25 +1,21 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
+import { createUser } from "@/app/models/user";
 
 export async function POST() {
   try {
     const { db } = await connectToDatabase();
 
     // Create admin user
-    const adminUser = {
-      name: "Admin User",
-      email: "admin@example.com",
-      password: "admin123", // In a real app, hash this password
-      role: "admin",
-    };
+    const adminUser = createUser(
+      "Admin User",
+      "admin@example.com",
+      "admin123",
+      "admin"
+    );
 
     // Create test user
-    const testUser = {
-      name: "Test User",
-      email: "test@example.com",
-      password: "test123", // In a real app, hash this password
-      role: "user",
-    };
+    const testUser = createUser("Test User", "test@example.com", "test123", "user");
 
     // Insert users into the database
     await db.collection("users").insertMany([adminUser, testUser]);

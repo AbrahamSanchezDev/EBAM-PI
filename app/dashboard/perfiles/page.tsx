@@ -3,6 +3,7 @@ import { lusitana } from "@/app/ui/fonts";
 import RFIDReader from "@/app/esp32/RFIDReader";
 import { InfoUsuario } from "@/app/ui/perfiles/infoUsuario";
 import { useEffect, useState } from "react";
+import { isUserLoggedIn } from "@/app/lib/userState";
 
 interface Scan {
   device_id: string;
@@ -12,6 +13,13 @@ interface Scan {
 export default function Page(props: {}) {
   const [scans, setScans] = useState<Scan[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isUserLoggedIn()) {
+      alert("Por favor, logeate para continuar");
+      window.location.href = "/";
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchScans() {
