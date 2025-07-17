@@ -105,6 +105,24 @@ export default function Page(props: {}) {
       >
         Ejecutar Prueba RFID
       </button>
+      <button
+        onClick={async () => {
+          try {
+            const response = await fetch("/api/create-users", { method: "POST" });
+            if (!response.ok) {
+              throw new Error("Error al crear usuarios");
+            }
+            const result = await response.json();
+            alert(result.message);
+          } catch (error) {
+            console.error("Error al crear usuarios:", error);
+            alert("Error al crear usuarios. Revisa la consola para más detalles.");
+          }
+        }}
+        className="mt-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+      >
+        Crear Usuarios de Prueba
+      </button>
     </div>
   );
 }

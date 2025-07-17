@@ -42,7 +42,7 @@ export default function SideNav() {
               await signOut({ redirectTo: "/" });
             } catch (error) {
               console.error("Error during sign out:", error);
-              throw new Error("Failed to sign out. Please try again.");
+              // throw new Error("Failed to sign out. Please try again.");
             }
           }}
         >

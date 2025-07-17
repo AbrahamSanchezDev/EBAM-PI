@@ -2,7 +2,7 @@
 import { MongoClient } from "mongodb";
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/rfid";
-const MONGODB_DB = process.env.MONGODB_DB || "rfid";
+const MONGODB_DB = process.env.MONGODB_DB || "BD";
 
 // Cache de la conexión para evitar múltiples conexiones
 let cachedClient = null;
