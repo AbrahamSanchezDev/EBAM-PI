@@ -133,3 +133,32 @@ export async function authenticate(
     throw error;
   }
 }
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+
+export async function authenticateUser(
+  params: { email?: string; password?: string } = {}
+) {
+  "use server";
+
+  const { email, password } = params;
+
+  if (!email || !password) {
+    throw new Error("Email and password are required" + email + " -- " + password);
+  }
+
+  const response = await fetch(`${apiBaseUrl}/api/authenticate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Authentication failed");
+  }
+
+  const { redirectTo } = await response.json();
+  return redirectTo;
+}
