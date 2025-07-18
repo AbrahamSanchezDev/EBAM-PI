@@ -1,4 +1,5 @@
 import { User } from "@/app/models/user";
+import { useState, useEffect } from "react";
 
 export const getCurrentUser = (): User | null => {
   const user = localStorage.getItem("currentUser");
@@ -16,3 +17,18 @@ export const clearCurrentUser = (): void => {
 export const isUserLoggedIn = (): boolean => {
   return !!getCurrentUser();
 };
+
+export function useProfiles() {
+  const [profiles, setProfiles] = useState([]);
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      const response = await fetch("/api/profiles");
+      const data = await response.json();
+      setProfiles(data);
+    }
+    fetchProfiles();
+  }, []);
+
+  return profiles;
+}
