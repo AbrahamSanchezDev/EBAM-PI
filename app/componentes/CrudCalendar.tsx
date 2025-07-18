@@ -9,11 +9,13 @@ interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
+  color?: string;
   repeat?: {
     days: number[];
     endDate: string;
     seriesId: string;
   };
+  _replaceSeries?: boolean;
 }
 
 interface EventModalProps {
@@ -48,6 +50,7 @@ const initialEvents: CalendarEvent[] = [
 
 function EventModal({ event, onClose, onDelete, onEdit }: EventModalProps) {
   const [title, setTitle] = useState(event.title);
+  const [color, setColor] = useState(event.color || "#2563eb");
   const [repeat, setRepeat] = useState(!!event.repeat);
   const [days, setDays] = useState<number[]>(event.repeat?.days || []); // 1=Lunes ... 5=Viernes
   const [endDate, setEndDate] = useState<string>(event.repeat?.endDate || "");
@@ -66,34 +69,12 @@ function EventModal({ event, onClose, onDelete, onEdit }: EventModalProps) {
 
   const handleSave = () => {
     if (!repeat || days.length === 0 || !endDate) {
-      onEdit({ ...event, title, repeat: undefined });
+      onEdit({ ...event, title, color, repeat: undefined });
       return;
     }
-    // Generar eventos repetidos con serieId SOLO a partir del día siguiente
-    const start = event.start;
-    const end = event.end;
-    const endRepeat = new Date(endDate);
-    const eventsToAdd: CalendarEvent[] = [];
+    // Solo llama a onEdit con la información necesaria, la lógica de repetición se maneja en CrudCalendar
     const seriesId = event.repeat?.seriesId || Math.random().toString(36).substring(2, 12);
-    let current = new Date(start);
-    current.setDate(current.getDate() + 1); // Comenzar al día siguiente
-    while (current <= endRepeat) {
-      const dayOfWeek = current.getDay(); // 0=Domingo, 1=Lunes, ... 6=Sábado
-      if (days.includes(dayOfWeek)) {
-        // Calcular hora de inicio y fin
-        const startCopy = new Date(current);
-        startCopy.setHours(start.getHours(), start.getMinutes(), 0, 0);
-        const endCopy = new Date(current);
-        endCopy.setHours(end.getHours(), end.getMinutes(), 0, 0);
-        eventsToAdd.push({ title, start: startCopy, end: endCopy, repeat: { days, endDate, seriesId } });
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    // Editar el evento actual y agregar los repetidos
-    onEdit({ ...event, title, repeat: { days, endDate, seriesId } });
-    if (eventsToAdd.length > 0 && window.confirm("¿Agregar eventos repetidos?") ) {
-      (window as any).addRepeatedEvents?.(eventsToAdd);
-    }
+    onEdit({ ...event, title, color, repeat: repeat ? { days, endDate, seriesId } : undefined, _replaceSeries: repeat });
   };
 
   return (
@@ -145,6 +126,16 @@ function EventModal({ event, onClose, onDelete, onEdit }: EventModalProps) {
             </div>
           </div>
         )}
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-blue-700 font-medium">Color del evento y repeticiones:</label>
+          <input
+            type="color"
+            value={color}
+            onChange={e => setColor(e.target.value)}
+            className="w-8 h-8 rounded-full border-2 border-blue-300 cursor-pointer shadow"
+            title="Selecciona el color para el evento y sus repeticiones"
+          />
+        </div>
         <div className="flex gap-3 justify-end mt-6">
           <button className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-4 py-2 rounded-lg font-semibold shadow hover:scale-105 transition" onClick={handleSave}>Guardar</button>
           <button className="bg-gradient-to-r from-red-400 to-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:scale-105 transition" onClick={() => onDelete(event)}>Eliminar</button>
@@ -158,10 +149,14 @@ export default function CrudCalendar() {
   const [events, setEvents] = useState(initialEvents);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
-  // Permitir que el modal agregue eventos repetidos
-  (window as any).addRepeatedEvents = (evts: CalendarEvent[]) => {
-    setEvents(prev => [...prev, ...evts]);
-  };
+  // Permitir que el modal agregue eventos repetidos SOLO en entorno navegador
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).addRepeatedEvents = (evts: CalendarEvent[]) => {
+        setEvents(prev => [...prev, ...evts]);
+      };
+    }
+  }, []);
 
   const handleSelectSlot = useCallback(
     ({ start, end }: { start: Date; end: Date }) => {
@@ -194,8 +189,51 @@ export default function CrudCalendar() {
     handleCloseModal();
   };
 
-  const handleEditEvent = (updatedEvent: CalendarEvent) => {
+  const handleEditEvent = (updatedEvent: any) => {
     setEvents(prev => {
+      // Si viene _replaceSeries, reemplaza toda la serie
+      if (updatedEvent._replaceSeries) {
+        const seriesId = updatedEvent.repeat?.seriesId;
+        // Elimina todos los eventos de la serie
+        const filtered = prev.filter(e => e.repeat?.seriesId !== seriesId);
+        // Crea el evento editado y sus repeticiones con el color seleccionado
+        const newEvents: CalendarEvent[] = [{
+          ...updatedEvent,
+          color: updatedEvent.color
+        }];
+        const start = updatedEvent.start;
+        const end = updatedEvent.end;
+        const endRepeat = new Date(updatedEvent.repeat.endDate);
+        const days = updatedEvent.repeat.days;
+        let current = new Date(start);
+        current.setDate(current.getDate() + 1); // Comenzar al día siguiente
+        while (current <= endRepeat) {
+          const dayOfWeek = current.getDay();
+          if (days.includes(dayOfWeek)) {
+            // Verifica que no exista ya un evento igual en la serie
+            const exists = newEvents.some(e =>
+              e.start.getTime() === current.getTime() &&
+              e.end.getTime() === end.getTime() &&
+              e.title === updatedEvent.title
+            );
+            if (!exists) {
+              const startCopy = new Date(current);
+              startCopy.setHours(start.getHours(), start.getMinutes(), 0, 0);
+              const endCopy = new Date(current);
+              endCopy.setHours(end.getHours(), end.getMinutes(), 0, 0);
+              newEvents.push({
+                title: updatedEvent.title,
+                start: startCopy,
+                end: endCopy,
+                color: updatedEvent.color,
+                repeat: { days, endDate: updatedEvent.repeat.endDate, seriesId }
+              });
+            }
+          }
+          current.setDate(current.getDate() + 1);
+        }
+        return [...filtered, ...newEvents];
+      }
       if (selectedEvent?.repeat?.seriesId && updatedEvent.repeat) {
         // Eliminar todos los eventos de la serie y dejar solo el editado + los demás días seleccionados
         const filtered = prev.filter(e => e.repeat?.seriesId !== selectedEvent.repeat?.seriesId);
@@ -229,6 +267,21 @@ export default function CrudCalendar() {
     handleCloseModal();
   };
 
+  const eventStyleGetter = (event: CalendarEvent) => {
+    const backgroundColor = event.color || '#2563eb';
+    return {
+      style: {
+        backgroundColor,
+        color: '#fff',
+        borderRadius: '8px',
+        border: 'none',
+        boxShadow: '0 2px 8px rgba(37,99,235,0.08)',
+        fontWeight: 600,
+        letterSpacing: '0.5px',
+      },
+    };
+  };
+
   const { defaultDate, scrollToTime } = useMemo(() => ({
     defaultDate: new Date(2025, 6, 2),
     scrollToTime: new Date(1970, 1, 1, 6),
@@ -249,6 +302,7 @@ export default function CrudCalendar() {
           selectable
           scrollToTime={scrollToTime}
           style={{ height: 500 }}
+          eventPropGetter={eventStyleGetter}
         />
       </div>
       {selectedEvent && (
