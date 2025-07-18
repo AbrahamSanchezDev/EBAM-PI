@@ -1,7 +1,7 @@
 "use client";
 import { lusitana } from '@/app/ui/fonts';
 import { CardEmpty } from '@/app/ui/dashboard/cards_empty';
-import { MyCalendar } from './MyCalendar';
+import { MyCalendar } from '../../componentes/MyCalendar';
 
 export default function Page() {
   // Simulación de datos, ya que fetchCardData es async y no se puede usar directamente en un componente client

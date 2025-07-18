@@ -16,6 +16,11 @@ import clsx from "clsx";
 const links = [
   { name: "Calendario", href: "/dashboard", icon: HomeIcon },
   {
+    name: "Control de calendario",
+    href: "/dashboard/control-calendario",
+    icon: DocumentDuplicateIcon,
+  },
+  {
     name: "Perfiles",
     href: "/dashboard/perfiles",
     icon: IdentificationIcon,
