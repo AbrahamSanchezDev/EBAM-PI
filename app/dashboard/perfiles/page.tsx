@@ -14,12 +14,12 @@ export default function Page(props: {}) {
   const [scans, setScans] = useState<Scan[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isUserLoggedIn()) {
-      alert("Por favor, logeate para continuar");
-      window.location.href = "/";
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (!isUserLoggedIn()) {
+  //     alert("Por favor, logeate para continuar");
+  //     window.location.href = "/";
+  //   }
+  // }, []);
 
   useEffect(() => {
     async function fetchScans() {
