@@ -15,9 +15,32 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, email, role } = await request.json();
+    const {
+      name,
+      email,
+      password,
+      role,
+      matricula,
+      carrera,
+      grupo,
+      rfids,
+      calendarIds,
+    } = await request.json();
+
     const { db } = await connectToDatabase();
-    const newProfile = { id: new ObjectId().toString(), name, email, role };
+    const newProfile = {
+      id: new ObjectId().toString(),
+      name,
+      email,
+      password,
+      role,
+      matricula,
+      carrera,
+      grupo,
+      rfids,
+      calendarIds,
+    };
+
     await db.collection("profiles").insertOne(newProfile);
     return NextResponse.json({ message: "Profile created successfully" });
   } catch (error) {

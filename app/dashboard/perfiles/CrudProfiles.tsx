@@ -10,6 +10,8 @@ interface Profile {
   matricula: string;
   carrera: string;
   grupo: string;
+  rfids: { id: string; active: boolean }[];
+  calendarIds: string[];
 }
 
 const CrudProfiles = () => {
@@ -22,9 +24,13 @@ const CrudProfiles = () => {
     matricula: "",
     carrera: "",
     grupo: "",
+    rfids: [],
+    calendarIds: [],
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExtraFieldsModalOpen, setIsExtraFieldsModalOpen] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfiles();
@@ -47,6 +53,27 @@ const CrudProfiles = () => {
     setForm({ ...form, [name]: value });
   };
 
+  const handleAddToList = (field: "rfids" | "calendarIds", value: string) => {
+    if (field === "rfids") {
+      setForm({ ...form, rfids: [...form.rfids, { id: value, active: false }] });
+    } else {
+      setForm({ ...form, calendarIds: [...form.calendarIds, value] });
+    }
+  };
+
+  const handleRemoveFromList = (field: "rfids" | "calendarIds", index: number) => {
+    const updatedList = [...form[field]];
+    updatedList.splice(index, 1);
+    setForm({ ...form, [field]: updatedList });
+  };
+
+  const handleToggleActive = (index: number) => {
+    const updatedRfids = form.rfids.map((rfid, i) =>
+      i === index ? { ...rfid, active: !rfid.active } : rfid
+    );
+    setForm({ ...form, rfids: updatedRfids });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -63,6 +90,8 @@ const CrudProfiles = () => {
         matricula: "",
         carrera: "",
         grupo: "",
+        rfids: [],
+        calendarIds: [],
       });
       setEditingId(null);
       setIsModalOpen(false);
@@ -82,6 +111,8 @@ const CrudProfiles = () => {
       matricula: profile.matricula || "",
       carrera: profile.carrera || "",
       grupo: profile.grupo || "",
+      rfids: profile.rfids || [],
+      calendarIds: profile.calendarIds || [],
     });
     setEditingId(profile._id || null);
     setIsModalOpen(true);
@@ -106,9 +137,43 @@ const CrudProfiles = () => {
       matricula: "",
       carrera: "",
       grupo: "",
+      rfids: [],
+      calendarIds: [],
     });
     setEditingId(null);
     setIsModalOpen(false);
+  };
+
+  const openExtraFieldsModal = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    setIsExtraFieldsModalOpen(true);
+  };
+
+  const closeExtraFieldsModal = () => {
+    setSelectedProfileId(null);
+    setIsExtraFieldsModalOpen(false);
+  };
+
+  const updateRFIDsAndCalendarIds = async () => {
+    try {
+      if (selectedProfileId) {
+        const profileToUpdate = profiles.find(
+          (profile) => profile._id === selectedProfileId
+        );
+        if (profileToUpdate) {
+          await axios.put(`/api/profiles/${selectedProfileId}`, {
+            ...profileToUpdate,
+            rfids: form.rfids,
+            calendarIds: form.calendarIds,
+          });
+          console.log("RFID and Calendar IDs updated successfully.");
+          fetchProfiles();
+        }
+      }
+    } catch (error) {
+      console.error("Error updating RFID and Calendar IDs:", error);
+    }
+    closeExtraFieldsModal();
   };
 
   return (
@@ -138,6 +203,12 @@ const CrudProfiles = () => {
               <td className="border border-gray-300 p-3">{profile.role}</td>
               <td className="border border-gray-300 p-3">
                 <button
+                  onClick={() => openExtraFieldsModal(profile._id!)}
+                  className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 mr-2"
+                >
+                  Agregar RFID y Calendarios
+                </button>
+                <button
                   onClick={() => handleEdit(profile)}
                   className="px-3 py-1 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 mr-2"
                 >
@@ -157,7 +228,7 @@ const CrudProfiles = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-md w-96">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-4xl">
             <h2 className="text-xl font-bold mb-4">
               {editingId ? "Editar Perfil" : "Crear Perfil"}
             </h2>
@@ -231,13 +302,126 @@ const CrudProfiles = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={cancelEdit}
+                  onClick={() => setIsModalOpen(false)}
                   className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
                 >
                   Cancelar
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {isExtraFieldsModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-4xl">
+            <h2 className="text-xl font-bold mb-4">Agregar RFID y Calendarios</h2>
+            <div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  placeholder="Agregar RFID"
+                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  id="rfidInput"
+                />
+                <button
+                  onClick={() => {
+                    const input = document.getElementById(
+                      "rfidInput"
+                    ) as HTMLInputElement;
+                    if (input && input.value) {
+                      handleAddToList("rfids", input.value);
+                      input.value = "";
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                >
+                  Agregar
+                </button>
+              </div>
+              <table className="w-full border-collapse border border-gray-300 mt-4">
+                <tbody>
+                  {form.rfids.map((rfid, index) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 p-2">{rfid.id}</td>
+                      <td className="border border-gray-300 p-2">
+                        <button
+                          onClick={() => handleToggleActive(index)}
+                          className={`px-2 py-1 rounded ${
+                            rfid.active ? "bg-green-500" : "bg-red-500"
+                          } text-white`}
+                        >
+                          {rfid.active ? "Activo" : "Inactivo"}
+                        </button>
+                      </td>
+                      <td className="border border-gray-300 p-2">
+                        <button
+                          onClick={() => handleRemoveFromList("rfids", index)}
+                          className="px-2 py-1 bg-red-500 text-white rounded"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-6">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  placeholder="Agregar ID de Calendario"
+                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  id="calendarIdInput"
+                />
+                <button
+                  onClick={() => {
+                    const input = document.getElementById(
+                      "calendarIdInput"
+                    ) as HTMLInputElement;
+                    if (input && input.value) {
+                      handleAddToList("calendarIds", input.value);
+                      input.value = "";
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                >
+                  Agregar
+                </button>
+              </div>
+              <table className="w-full border-collapse border border-gray-300 mt-4">
+                <tbody>
+                  {form.calendarIds.map((id, index) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 p-2">{id}</td>
+                      <td className="border border-gray-300 p-2">
+                        <button
+                          onClick={() => handleRemoveFromList("calendarIds", index)}
+                          className="px-2 py-1 bg-red-500 text-white rounded"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex space-x-4 mt-4">
+              <button
+                onClick={updateRFIDsAndCalendarIds}
+                className="px-6 py-3 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+              >
+                Guardar
+              </button>
+              <button
+                onClick={closeExtraFieldsModal}
+                className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

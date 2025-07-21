@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request) {
   try {
-    const { id } = params;
+    const url = new URL(request.url);
+    const id = url.pathname.split("/").pop();
     const { name, email, role, matricula, carrera, grupo } = await request.json();
     const { db } = await connectToDatabase();
     await db
@@ -20,12 +21,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request) {
   try {
-    const { id } = params;
+    const url = new URL(request.url);
+    const id = url.pathname.split("/").pop();
     const { db } = await connectToDatabase();
     await db.collection("profiles").deleteOne({ _id: new ObjectId(id) });
     return NextResponse.json({ message: "Profile deleted successfully" });
