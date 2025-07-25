@@ -174,14 +174,17 @@ const CrudProfiles = () => {
         const profileToUpdate = profiles.find(
           (profile) => profile._id === selectedProfileId
         );
+        console.log("Updating profile:", profileToUpdate);
         if (profileToUpdate) {
+          // Merge previous profile data with updated rfids and calendarIds
           const updatedProfile = {
             ...profileToUpdate,
             rfids: form.rfids,
             calendarIds: form.calendarIds,
-            password: "", // No enviar la contraseña actual
           };
-          await axios.put(`/api/profiles/${selectedProfileId}`, updatedProfile);
+          // Remove _id if present (MongoDB does not allow updating _id)
+          const { _id, ...profileDataToSend } = updatedProfile;
+          await axios.put(`/api/profiles/${selectedProfileId}`, profileDataToSend);
           console.log("RFID and Calendar IDs updated successfully.");
           fetchProfiles();
         }

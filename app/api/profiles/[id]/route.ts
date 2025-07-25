@@ -6,14 +6,24 @@ export async function PUT(request: Request) {
   try {
     const url = new URL(request.url);
     const id = url.pathname.split("/").pop();
-    const { name, email, role, matricula, carrera, grupo } = await request.json();
+    const { name, email, role, matricula, carrera, grupo, rfids, calendarIds } =
+      await request.json();
     const { db } = await connectToDatabase();
-    await db
-      .collection("profiles")
-      .updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { name, email, role, matricula, carrera, grupo } }
-      );
+    await db.collection("profiles").updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          name,
+          email,
+          role,
+          matricula,
+          carrera,
+          grupo,
+          rfids,
+          calendarIds,
+        },
+      }
+    );
     return NextResponse.json({ message: "Profile updated successfully" });
   } catch (error) {
     console.error("Error updating profile:", error);

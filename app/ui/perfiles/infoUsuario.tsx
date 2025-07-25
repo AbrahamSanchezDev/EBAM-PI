@@ -60,7 +60,6 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
           // Si no está autenticado, usa el usuario local
           const localUser = getCurrentUser();
           if (localUser) {
-            console.log("userData (local) --:", localUser);
             setProfile(localUser);
             setError(null);
           } else {
@@ -70,7 +69,6 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
             );
           }
         } else {
-          console.log("userData (local) es!: ", response.data);
           setProfile(response.data || null);
           setError(null);
         }
