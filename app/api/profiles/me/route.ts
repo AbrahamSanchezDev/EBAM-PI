@@ -1,27 +1,36 @@
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 import { connectToDatabase } from "../../../lib/mongodb";
 
 export async function GET(req: Request) {
   try {
-    // Obtén el token del usuario autenticado (ajusta según tu sistema de auth)
-    const token = await getToken({ req });
-    if (!token || !token.email) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    // Obtener el email del usuario desde el header o query param
+    const url = new URL(req.url);
+    const email = req.headers.get("x-user-email") || url.searchParams.get("email");
+    console.log("email:", email);
+    if (!email) {
+      return new Response(
+        JSON.stringify({
+          error: "No autenticado por que no hay email " + email + " ... ",
+        }),
+        {
+          status: 401,
+        }
+      );
     }
 
     const { db } = await connectToDatabase();
-    const user = await db.collection("profiles").findOne({ email: token.email });
+    const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+      return new Response(JSON.stringify({ error: "Usuario no encontrado" }), {
+        status: 404,
+      });
     }
 
     // Opcional: elimina campos sensibles
     delete user.password;
 
-    return NextResponse.json(user);
+    return new Response(JSON.stringify(user), { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Error interno" }), { status: 500 });
   }
 }

@@ -2,6 +2,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import UserIcon from "./user-icon";
 import axios from "axios";
+import { getCurrentUser } from "@/app/lib/userState";
+import { el } from "date-fns/locale";
+
+interface InfoUsuarioProps {
+  userId?: string;
+}
 
 // Simulación de datos de usuario y sus IDs registrados
 const currentUser = {
@@ -15,7 +21,7 @@ const currentUser = {
   foto: "/user-placeholder.png", // Ruta de imagen por defecto
 };
 
-export function InfoUsuario() {
+export function InfoUsuario({ userId }: InfoUsuarioProps) {
   const [showModal, setShowModal] = useState(false);
   const [foto, setFoto] = useState<string | null>(null); // Foto actual mostrada
   const [previewFoto, setPreviewFoto] = useState<string | null>(null); // Foto seleccionada en modal
@@ -35,18 +41,55 @@ export function InfoUsuario() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Puedes ajustar la lógica para obtener el usuario actual si tienes auth
-        const response = await axios.get("/api/profiles");
-        // Si tienes autenticación, filtra el usuario actual aquí
-        setProfile(response.data[0] || null);
+        let url = "/api/profiles/me";
+        let config = {};
+        if (userId) {
+          url = `/api/profiles/${userId}`;
+        } else {
+          // Si no hay id, intenta obtener el email del usuario local
+          const localUser = getCurrentUser();
+          if (localUser?.email) {
+            config = { headers: { "x-user-email": localUser.email } };
+          } else {
+            console.log("No se proporcionó userId ni email local");
+          }
+        }
+        const response = await axios.get(url, config);
+
+        if (response.status === 401 || response.data?.error === "No autenticado") {
+          // Si no está autenticado, usa el usuario local
+          const localUser = getCurrentUser();
+          if (localUser) {
+            console.log("userData (local) --:", localUser);
+            setProfile(localUser);
+            setError(null);
+          } else {
+            setProfile(null);
+            setError(
+              "No has iniciado sesión. Por favor, inicia sesión para ver tu perfil."
+            );
+          }
+        } else {
+          console.log("userData (local) es!: ", response.data);
+          setProfile(response.data || null);
+          setError(null);
+        }
       } catch (err: any) {
-        setError("Error al obtener el perfil");
+        // Si hay error, intenta mostrar el usuario local
+        const localUser = getCurrentUser();
+        if (localUser) {
+          setProfile(localUser);
+          setError(null);
+        } else {
+          setError("Error al obtener el perfil");
+          setProfile(null);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchProfile();
-  }, []);
+  }, [userId]);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -76,8 +119,24 @@ export function InfoUsuario() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Escuchar el evento 'userChanged' para actualizar automáticamente la información del usuario
+  useEffect(() => {
+    const handler = (e: any) => {
+      const newUser = e.detail;
+      if (newUser?._id !== profile?._id) {
+        setProfile(null); // Reiniciar perfil para forzar recarga
+        setLoading(true);
+        setError(null);
+      }
+    };
+    window.addEventListener("userChanged", handler);
+    return () => {
+      window.removeEventListener("userChanged", handler);
+    };
+  }, [profile?._id]);
+
   if (loading) return <div>Cargando información...</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
   if (!profile) return <div>No se encontró información del usuario.</div>;
 
   return (

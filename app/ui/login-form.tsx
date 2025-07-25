@@ -23,6 +23,7 @@ export default function LoginForm() {
   const handleFormAction = async () => {
     try {
       const user = await authenticateUser({ email, password });
+      console.log("userData:", user);
       setCurrentUser(user);
       window.location.href = callbackUrl;
     } catch (error: any) {

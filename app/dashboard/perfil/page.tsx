@@ -3,7 +3,7 @@ import { lusitana } from "@/app/ui/fonts";
 import RFIDReader from "@/app/esp32/RFIDReader";
 import { InfoUsuario } from "@/app/ui/perfiles/infoUsuario";
 import { useEffect, useState } from "react";
-import { isUserLoggedIn } from "@/app/lib/userState";
+import { isUserLoggedIn, getCurrentUser } from "@/app/lib/userState";
 
 interface Scan {
   device_id: string;
@@ -43,12 +43,29 @@ const Page = () => {
     async function fetchUser() {
       try {
         const response = await fetch("/api/profiles/me");
-        if (!response.ok) throw new Error("No se pudo obtener el usuario");
+        if (!response.ok) {
+          // Si no está autenticado, usa el usuario local
+          const localUser = getCurrentUser();
+          if (localUser) {
+            setUser(localUser);
+            console.log("userData (local):", localUser);
+          } else {
+            setUser(null);
+          }
+          return;
+        }
         const userData = await response.json();
         setUser(userData);
         console.log("userData:", userData);
       } catch (err) {
-        setUser(null);
+        // Si hay error, intenta mostrar el usuario local
+        const localUser = getCurrentUser();
+        if (localUser) {
+          setUser(localUser);
+          console.log("userData (local):", localUser);
+        } else {
+          setUser(null);
+        }
       }
     }
     fetchScans();
@@ -100,7 +117,7 @@ const Page = () => {
       <div className="flex w-full items-center justify-between">
         <h1 className={`${lusitana.className} text-2xl`}>Perfiles</h1>
       </div>
-      <InfoUsuario user={user} />
+      <InfoUsuario userId={user?._id} />
       {error ? (
         <p className="text-red-500">{error}</p>
       ) : (

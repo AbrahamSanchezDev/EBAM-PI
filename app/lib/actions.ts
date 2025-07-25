@@ -159,6 +159,12 @@ export async function authenticateUser(
     throw new Error(error.message || "Authentication failed");
   }
 
-  const { redirectTo } = await response.json();
-  return redirectTo;
+  // Esperar el usuario y/o redirectTo
+  const data = await response.json();
+  // Si el backend solo manda redirectTo, hay que ajustarlo para mandar el usuario también
+  if (data.user) {
+    return data.user;
+  }
+  // fallback: si solo hay redirectTo, regresar el objeto completo
+  return data;
 }
