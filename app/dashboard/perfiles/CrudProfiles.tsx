@@ -146,6 +146,20 @@ const CrudProfiles = () => {
 
   const openExtraFieldsModal = (profileId: string) => {
     setSelectedProfileId(profileId);
+    const profile = profiles.find((p) => p._id === profileId);
+    if (profile) {
+      setForm({
+        name: profile.name || "",
+        email: profile.email || "",
+        password: "", // No cargar contraseña
+        role: profile.role || "user",
+        matricula: profile.matricula || "",
+        carrera: profile.carrera || "",
+        grupo: profile.grupo || "",
+        rfids: profile.rfids || [],
+        calendarIds: profile.calendarIds || [],
+      });
+    }
     setIsExtraFieldsModalOpen(true);
   };
 
@@ -161,11 +175,13 @@ const CrudProfiles = () => {
           (profile) => profile._id === selectedProfileId
         );
         if (profileToUpdate) {
-          await axios.put(`/api/profiles/${selectedProfileId}`, {
+          const updatedProfile = {
             ...profileToUpdate,
             rfids: form.rfids,
             calendarIds: form.calendarIds,
-          });
+            password: "", // No enviar la contraseña actual
+          };
+          await axios.put(`/api/profiles/${selectedProfileId}`, updatedProfile);
           console.log("RFID and Calendar IDs updated successfully.");
           fetchProfiles();
         }

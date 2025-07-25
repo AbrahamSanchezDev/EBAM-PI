@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import UserIcon from "./user-icon";
+import axios from "axios";
 
 // Simulación de datos de usuario y sus IDs registrados
 const currentUser = {
@@ -14,10 +15,13 @@ const currentUser = {
   foto: "/user-placeholder.png", // Ruta de imagen por defecto
 };
 
-export function InfoUsuario({}: {}) {
+export function InfoUsuario() {
   const [showModal, setShowModal] = useState(false);
   const [foto, setFoto] = useState<string | null>(null); // Foto actual mostrada
   const [previewFoto, setPreviewFoto] = useState<string | null>(null); // Foto seleccionada en modal
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Cargar la foto del localStorage solo en el cliente
@@ -26,6 +30,22 @@ export function InfoUsuario({}: {}) {
     if (fotoGuardada) {
       setFoto(fotoGuardada);
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        // Puedes ajustar la lógica para obtener el usuario actual si tienes auth
+        const response = await axios.get("/api/profiles");
+        // Si tienes autenticación, filtra el usuario actual aquí
+        setProfile(response.data[0] || null);
+      } catch (err: any) {
+        setError("Error al obtener el perfil");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
   }, []);
 
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,13 +76,15 @@ export function InfoUsuario({}: {}) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  if (loading) return <div>Cargando información...</div>;
+  if (error) return <div>{error}</div>;
+  if (!profile) return <div>No se encontró información del usuario.</div>;
+
   return (
     <>
       {/* Información del usuario actual y foto */}
       <div className="flex items-center my-4 gap-6 w-full">
-        {/* Fondo gris claro con datos y foto */}
         <div className="flex flex-1 flex-row bg-[#f7f9fb] rounded-xl p-6 min-w-[320px] items-center shadow-sm relative overflow-visible">
-          {/* Foto usuario: arriba a la derecha, mitad fuera del fondo gris */}
           <div className="absolute right-10 -top-16">
             <div className="relative">
               {foto ? (
@@ -74,7 +96,6 @@ export function InfoUsuario({}: {}) {
               ) : (
                 <UserIcon className="w-32 h-32 text-gray-400 bg-white rounded-full border-2 border-gray-300 shadow p-4" />
               )}
-              {/* Botón de editar */}
               <button
                 className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow hover:bg-blue-100 border border-blue-400"
                 title="Cambiar foto"
@@ -93,12 +114,19 @@ export function InfoUsuario({}: {}) {
               </button>
             </div>
           </div>
-          {/* Datos usuario: debajo de la foto, pero con margen superior para no tapar la foto */}
           <div className="flex-1 flex flex-col gap-1 mt-8">
             <span className="font-bold text-lg text-black">Nombre:</span>
-            <span className="text-base text-black mb-2">{currentUser.nombre}</span>
+            <span className="text-base text-black mb-2">{profile?.name || "-"}</span>
+            <span className="font-bold text-lg text-black">Email:</span>
+            <span className="text-base text-black mb-2">
+              {profile?.email || "-"}
+            </span>
             <span className="font-bold text-lg text-black">Matricula:</span>
-            <span className="text-base text-black">{currentUser.matricula}</span>
+            <span className="text-base text-black">{profile?.matricula || "-"}</span>
+            <span className="font-bold text-lg text-black">Carrera:</span>
+            <span className="text-base text-black">{profile?.carrera || "-"}</span>
+            <span className="font-bold text-lg text-black">Grupo:</span>
+            <span className="text-base text-black">{profile?.grupo || "-"}</span>
           </div>
         </div>
       </div>
@@ -173,32 +201,48 @@ export function InfoUsuario({}: {}) {
         </div>
       )}
 
-      {/* Tabla de IDs registrados */}
+      {/* Tabla de RFIDs registrados */}
       <div className="my-4">
         <h2 className="font-bold text-lg mb-2 text-black">RFID Registrados</h2>
         <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow">
           <thead>
             <tr className="bg-[#f7f9fb]">
               <th className="px-4 py-2 text-left text-gray-500 font-semibold">ID</th>
+              <th className="px-4 py-2 text-left text-gray-500 font-semibold">
+                Estado
+              </th>
             </tr>
           </thead>
           <tbody>
-            {currentUser.idsRegistrados.map(({ id, estado }) => (
-              <tr key={id}>
-                <td className="border-t border-gray-200 px-4 py-2 text-base">
-                  <span>{id} - </span>
-                  <span
-                    className={
-                      estado.trim() === "Activo"
-                        ? "ml-2 font-semibold text-green-600"
-                        : "ml-2 font-semibold text-red-500"
-                    }
-                  >
-                    {`${estado}`}
-                  </span>
+            {profile?.rfids && profile.rfids.length > 0 ? (
+              profile.rfids.map((rfid: any, idx: number) => (
+                <tr key={rfid.id || idx}>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    {rfid.id}
+                  </td>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    <span
+                      className={
+                        rfid.active
+                          ? "ml-2 font-semibold text-green-600"
+                          : "ml-2 font-semibold text-red-500"
+                      }
+                    >
+                      {rfid.active ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={2}
+                  className="border-t border-gray-200 px-4 py-2 text-base text-gray-500"
+                >
+                  No hay RFIDs registrados
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { email, password } = await request.json();
 
     const { db } = await connectToDatabase();
-    const user = await db.collection("users").findOne({ email });
+    const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {
       return NextResponse.json(
