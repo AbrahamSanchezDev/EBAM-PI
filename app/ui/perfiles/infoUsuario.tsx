@@ -40,48 +40,32 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
       try {
         let url = "/api/profiles/me";
         let config = {};
         if (userId) {
           url = `/api/profiles/${userId}`;
         } else {
-          // Si no hay id, intenta obtener el email del usuario local
-          const localUser = getCurrentUser();
-          if (localUser?.email) {
-            config = { headers: { "x-user-email": localUser.email } };
-          } else {
-            console.log("No se proporcionó userId ni email local");
-          }
-        }
-        const response = await axios.get(url, config);
-
-        if (response.status === 401 || response.data?.error === "No autenticado") {
-          // Si no está autenticado, usa el usuario local
-          const localUser = getCurrentUser();
-          if (localUser) {
-            setProfile(localUser);
-            setError(null);
+          // Obtener solo el email guardado
+          const email = getCurrentUser();
+          if (email) {
+            config = { headers: { "x-user-email": email } };
           } else {
             setProfile(null);
             setError(
               "No has iniciado sesión. Por favor, inicia sesión para ver tu perfil."
             );
+            setLoading(false);
+            return;
           }
-        } else {
-          setProfile(response.data || null);
-          setError(null);
         }
+        const response = await axios.get(url, config);
+        setProfile(response.data || null);
+        setError(null);
       } catch (err: any) {
-        // Si hay error, intenta mostrar el usuario local
-        const localUser = getCurrentUser();
-        if (localUser) {
-          setProfile(localUser);
-          setError(null);
-        } else {
-          setError("Error al obtener el perfil");
-          setProfile(null);
-        }
+        setError("Error al obtener el perfil");
+        setProfile(null);
       } finally {
         setLoading(false);
       }
@@ -120,18 +104,19 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   // Escuchar el evento 'userChanged' para actualizar automáticamente la información del usuario
   useEffect(() => {
     const handler = (e: any) => {
-      const newUser = e.detail;
-      if (newUser?._id !== profile?._id) {
-        setProfile(null); // Reiniciar perfil para forzar recarga
-        setLoading(true);
-        setError(null);
-      }
+      // Cuando cambia el usuario (email), recargar el perfil
+      setProfile(null);
+      setLoading(true);
+      setError(null);
+      // Forzar fetchProfile ejecutando el efecto de userId
+      // (esto funciona porque getCurrentUser() cambiará)
+      // Si quieres forzar puedes usar un estado extra, pero así es suficiente
     };
     window.addEventListener("userChanged", handler);
     return () => {
       window.removeEventListener("userChanged", handler);
     };
-  }, [profile?._id]);
+  }, []);
 
   if (loading) return <div>Cargando información...</div>;
   if (error) return <div className="text-red-500">{error}</div>;

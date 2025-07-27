@@ -1,26 +1,23 @@
-import { User } from "@/app/models/user";
 import { useState, useEffect } from "react";
 
-let currentUser: any = null;
-
-export const getCurrentUser = (): User | null => {
-  const user = localStorage.getItem("currentUser");
-  console.log("userState - getCurrentUser:", user);
-  return user ? JSON.parse(user) : null;
+// Devuelve solo el email guardado, o null si no hay usuario
+export const getCurrentUser = (): string | null => {
+  const email = localStorage.getItem("currentUser");
+  console.log("userState - getCurrentUser (email):", email);
+  return email || null;
 };
 
-export const setCurrentUser = (user: User): void => {
-  currentUser = user;
-  localStorage.setItem("currentUser", JSON.stringify(user));
-  console.log("userState - setCurrentUser:", user);
-  // Dispatch a custom event to notify user change
+// Guarda solo el email del usuario
+export const setCurrentUser = (email: string): void => {
+  localStorage.setItem("currentUser", email);
+  console.log("userState - setCurrentUser (email):", email);
+  // Dispatch a custom event to notify user change (solo email)
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("userChanged", { detail: user }));
+    window.dispatchEvent(new CustomEvent("userChanged", { detail: email }));
   }
 };
 
 export const clearCurrentUser = (): void => {
-  currentUser = null;
   localStorage.removeItem("currentUser");
 };
 

@@ -24,7 +24,7 @@ export default function LoginForm() {
     try {
       const user = await authenticateUser({ email, password });
       console.log("userData:", user);
-      setCurrentUser(user);
+      setCurrentUser(email);
       window.location.href = callbackUrl;
     } catch (error: any) {
       setErrorMessage(error.message || "Ocurrió un error inesperado");
