@@ -8,9 +8,11 @@
 #define SS_PIN 5
 #define RST_PIN 21
 
+const char* nombreDispositivo ="Entrada de prueba";
+
 const char* ssid = "";
 const char* password = "";
-const char* apiEndpoint = "http://localhost:3000/api/rfid"; // Reemplaza con tu IP local y puerto
+const char* apiEndpoint = "http://192.168.2.191:3000/api/rfid"; // Reemplaza con tu IP local y puerto
 
 WiFiServer server(80);
 MFRC522 mfrc522(SS_PIN, RST_PIN);
@@ -108,7 +110,8 @@ void registerScanToAPI(String uid) {
   http.addHeader("Content-Type", "application/json");
   
   // Crear el JSON para enviar
-  String httpRequestData = "{\"uid\":\"" + uid + "\",\"device_id\":\"ESP32_RFID_Reader\"}";
+String httpRequestData = "{\"uid\":\"" + uid + "\",\"device_id\":\"" + nombreDispositivo + "\"}";
+
   
   int httpResponseCode = http.POST(httpRequestData);
   
