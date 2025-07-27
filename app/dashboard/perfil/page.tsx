@@ -8,6 +8,7 @@ import { isUserLoggedIn, getCurrentUser } from "@/app/lib/userState";
 interface Scan {
   device_id: string;
   timestamp: string;
+  uid?: string;
 }
 
 const Page = () => {
@@ -126,7 +127,7 @@ const Page = () => {
           <ul>
             {scans.map((scan, index) => (
               <li key={index} className="border-b py-2">
-                ID: {scan.device_id}, Timestamp:{" "}
+                ID: {scan.device_id}, UID: {scan.uid ?? "-"}, Timestamp:{" "}
                 {new Date(scan.timestamp).toLocaleString()}
               </li>
             ))}
