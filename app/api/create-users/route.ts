@@ -1,24 +1,39 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
-import { createUser } from "@/app/models/user";
+import { createProfile } from "@/app/models/user";
 
 export async function POST() {
   try {
     const { db } = await connectToDatabase();
 
     // Create admin user
-    const adminUser = createUser(
+    const adminUser = createProfile(
       "Admin User",
       "admin@example.com",
       "admin123",
-      "admin"
+      "admin",
+      "123456",
+      "Computer Science",
+      "A1",
+      [{ id: "rfid1", active: true }],
+      ["calendar1"]
     );
 
     // Create test user
-    const testUser = createUser("Test User", "test@example.com", "test123", "user");
+    const testUser = createProfile(
+      "Test User",
+      "test@example.com",
+      "test123",
+      "user",
+      "123456",
+      "Computer Science",
+      "A1",
+      [{ id: "rfid1", active: true }],
+      ["calendar1"]
+    );
 
     // Insert users into the database
-    await db.collection("users").insertMany([adminUser, testUser]);
+    await db.collection("profiles").insertMany([adminUser, testUser]);
 
     return NextResponse.json({ message: "Users created successfully" });
   } catch (error) {

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { email, password } = await request.json();
 
     const { db } = await connectToDatabase();
-    const user = await db.collection("users").findOne({ email });
+    const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {
       return NextResponse.json(
@@ -30,7 +30,13 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ redirectTo: "/dashboard" });
+    // Eliminar la contraseña antes de enviar el usuario al frontend
+    const { password: _, ...userWithoutPassword } = user;
+
+    return NextResponse.json({
+      redirectTo: "/dashboard",
+      user: userWithoutPassword,
+    });
   } catch (error) {
     console.error("Error during authentication:", error);
     return NextResponse.json(

@@ -1,12 +1,20 @@
-import { User } from "@/app/models/user";
+import { useState, useEffect } from "react";
 
-export const getCurrentUser = (): User | null => {
-  const user = localStorage.getItem("currentUser");
-  return user ? JSON.parse(user) : null;
+// Devuelve solo el email guardado, o null si no hay usuario
+export const getCurrentUser = (): string | null => {
+  const email = localStorage.getItem("currentUser");
+  console.log("userState - getCurrentUser (email):", email);
+  return email || null;
 };
 
-export const setCurrentUser = (user: User): void => {
-  localStorage.setItem("currentUser", JSON.stringify(user));
+// Guarda solo el email del usuario
+export const setCurrentUser = (email: string): void => {
+  localStorage.setItem("currentUser", email);
+  console.log("userState - setCurrentUser (email):", email);
+  // Dispatch a custom event to notify user change (solo email)
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("userChanged", { detail: email }));
+  }
 };
 
 export const clearCurrentUser = (): void => {
@@ -16,3 +24,18 @@ export const clearCurrentUser = (): void => {
 export const isUserLoggedIn = (): boolean => {
   return !!getCurrentUser();
 };
+
+export function useProfiles() {
+  const [profiles, setProfiles] = useState([]);
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      const response = await fetch("/api/profiles");
+      const data = await response.json();
+      setProfiles(data);
+    }
+    fetchProfiles();
+  }, []);
+
+  return profiles;
+}

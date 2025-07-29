@@ -6,8 +6,17 @@ For more information, see the [course curriculum](https://nextjs.org/learn) on t
 
 instrucciones al clonar el proyecto por primera vez
 
+Debes de tener instalado nodejs
+
 npm install
 
 se aplica: npm install -g npm@11.4.2
 
+npm install -g pnpm
+
 pnpm dev
+
+
+
+Para detener mongodb
+net stop MongoDB

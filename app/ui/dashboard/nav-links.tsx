@@ -21,6 +21,11 @@ const links = [
     icon: DocumentDuplicateIcon,
   },
   {
+    name: "Perfil",
+    href: "/dashboard/perfil",
+    icon: IdentificationIcon,
+  },
+  {
     name: "Perfiles",
     href: "/dashboard/perfiles",
     icon: IdentificationIcon,
