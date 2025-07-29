@@ -82,38 +82,87 @@ interface Scan {
 
 export default function ScansPage() {
   const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [scans, setScans] = useState<Scan[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  // Search/filter state
+  const [searchUid, setSearchUid] = useState("");
+  const [filteredScans, setFilteredScans] = useState<Scan[]>([]);
+
   // Imprimir los registros seleccionados
   const handlePrint = (selectedIdxs: number[]) => {
-    const selectedScans = scans.filter((_, idx) => selectedIdxs.includes(idx));
-    const printWindow = window.open("", "", "width=800,height=600");
+    const selectedScans = filteredScans.filter((_, idx) =>
+      selectedIdxs.includes(idx)
+    );
+    const printWindow = window.open("", "", "width=900,height=700");
     if (printWindow) {
-      printWindow.document.write(
-        "<html><head><title>Impresión de Registros</title>"
-      );
-      printWindow.document.write(
-        "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f3f4f6;}</style>"
-      );
-      printWindow.document.write("</head><body>");
-      printWindow.document.write("<h2>Registros de Scans Seleccionados</h2>");
-      printWindow.document.write(
-        "<table><thead><tr><th>Dispositivo</th><th>UID</th><th>Fecha y Hora</th></tr></thead><tbody>"
-      );
-      selectedScans.forEach((scan) => {
-        printWindow.document.write(
-          `<tr><td>${scan.device_id}</td><td>${scan.uid ?? "-"}</td><td>${new Date(
-            scan.timestamp
-          ).toLocaleString()}</td></tr>`
-        );
-      });
-      printWindow.document.write("</tbody></table>");
-      printWindow.document.write("</body></html>");
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Impresión de Registros</title>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8fafc; margin: 0; padding: 32px; }
+            .header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+            .logo { height: 48px; }
+            .title { font-size: 2rem; font-weight: 700; color: #2563eb; }
+            .subtitle { color: #64748b; font-size: 1.1rem; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; box-shadow: 0 2px 8px #0001; }
+            th, td { border: 1px solid #e5e7eb; padding: 12px 10px; text-align: left; }
+            th { background: #f1f5f9; color: #1e293b; font-size: 1rem; font-weight: 600; }
+            tr:nth-child(even) { background: #f8fafc; }
+            tr:hover { background: #e0e7ff; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <img src="${
+              window.location.origin
+            }/logo%202.png" class="logo" alt="Logo" />
+            <span class="title">Registros de Scans Seleccionados</span>
+          </div>
+          <div class="subtitle">Fecha de impresión: ${new Date().toLocaleString()}</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Dispositivo</th>
+                <th>UID</th>
+                <th>Fecha y Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedScans
+                .map(
+                  (scan) => `
+                <tr>
+                  <td>${scan.device_id}</td>
+                  <td>${scan.uid ?? "-"}</td>
+                  <td>${new Date(scan.timestamp).toLocaleString()}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `);
       printWindow.document.close();
       printWindow.print();
     }
     setPrintModalOpen(false);
   };
-  const [scans, setScans] = useState<Scan[]>([]);
-  const [error, setError] = useState<string | null>(null);
+
+  // Filtering logic
+  useEffect(() => {
+    if (searchUid.trim() === "") {
+      setFilteredScans(scans);
+    } else {
+      setFilteredScans(
+        scans.filter((scan) =>
+          scan.uid?.toLowerCase().includes(searchUid.trim().toLowerCase())
+        )
+      );
+    }
+  }, [searchUid, scans]);
 
   useEffect(() => {
     async function fetchScans() {
@@ -173,23 +222,75 @@ export default function ScansPage() {
 
   return (
     <div className="w-full p-6">
-      <h1 className="text-3xl font-extrabold mb-8 flex items-center gap-2">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-8 w-8 text-blue-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 17v-2a4 4 0 018 0v2m-4-4a4 4 0 100-8 4 4 0 000 8zm0 0v2m0 4h.01"
-          />
-        </svg>
-        Registros de Scans
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+        <div className="flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8 text-blue-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 17v-2a4 4 0 018 0v2m-4-4a4 4 0 100-8 4 4 0 000 8zm0 0v2m0 4h.01"
+            />
+          </svg>
+          <span className="text-3xl font-extrabold">Registros de Scans</span>
+        </div>
+        <div className="flex gap-2 items-center">
+          <div className="relative flex items-center">
+            <span className="absolute left-2 text-gray-400 pointer-events-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"
+                />
+              </svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Buscar por UID..."
+              value={searchUid}
+              onChange={(e) => setSearchUid(e.target.value)}
+              className="border border-gray-300 rounded-l px-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-w-[180px]"
+              style={{ minWidth: 180 }}
+            />
+            <button
+              onClick={() => setSearchUid("")}
+              className={
+                `px-4 py-2 rounded-r font-bold text-white text-sm transition-all duration-150 border-l border-blue-400 shadow-md ` +
+                (searchUid.trim() === ""
+                  ? "bg-gradient-to-r from-blue-500 to-blue-500 cursor-not-allowed opacity-60"
+                  : "bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 focus:ring-2 focus:ring-blue-400")
+              }
+              disabled={searchUid.trim() === ""}
+              style={{ marginLeft: "-1px" }}
+            >
+              <svg
+                className="inline-block w-4 h-4 mr-1 -mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16" />
+              </svg>
+              Mostrar todos
+            </button>
+          </div>
+        </div>
+      </div>
       {error ? (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -214,14 +315,14 @@ export default function ScansPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {scans.length === 0 ? (
+              {filteredScans.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="text-center py-8 text-gray-400">
                     No hay registros de scans.
                   </td>
                 </tr>
               ) : (
-                scans.map((scan, index) => (
+                filteredScans.map((scan, index) => (
                   <tr key={index} className="hover:bg-blue-50 transition">
                     <td className="px-4 py-2 font-mono text-xs text-gray-500">
                       {index + 1}
@@ -280,7 +381,7 @@ export default function ScansPage() {
         <PrintModal
           open={printModalOpen}
           onClose={() => setPrintModalOpen(false)}
-          scans={scans}
+          scans={filteredScans}
           onPrint={handlePrint}
         />
         <button
