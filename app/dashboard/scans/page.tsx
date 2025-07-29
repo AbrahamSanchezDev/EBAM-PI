@@ -15,38 +15,69 @@ function PrintModal({ open, onClose, scans, onPrint }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
-        <h2 className="text-xl font-bold mb-4">Imprime los registros de scans</h2>
-        <div className="overflow-x-auto max-h-80 mb-4">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-blue-100/80 via-white/90 to-blue-200/80">
+      <div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-2xl border border-blue-100">
+        <div className="flex items-center gap-3 px-6 py-4 rounded-t-2xl bg-gradient-to-r from-blue-400 to-blue-400">
+          <svg
+            className="h-7 w-7 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 8V6a4 4 0 10-8 0v2M5 8h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2z"
+            />
+          </svg>
+          <h2 className="text-xl font-bold text-white tracking-wide">
+            Imprime los registros de scans
+          </h2>
+        </div>
+        <div className="overflow-x-auto max-h-80 mb-4 px-6 pt-4">
+          <table className="min-w-full divide-y divide-blue-200 rounded-xl overflow-hidden shadow">
+            <thead className="bg-gradient-to-r from-blue-100 to-blue-200">
               <tr>
                 <th></th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                <th className="px-2 py-2 text-xs font-bold text-blue-800 uppercase">
                   Dispositivo
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                <th className="px-2 py-2 text-xs font-bold text-blue-800 uppercase">
                   UID
                 </th>
-                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                <th className="px-2 py-2 text-xs font-bold text-blue-800 uppercase">
                   Fecha y Hora
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {scans.map((scan, idx) => (
-                <tr key={idx}>
-                  <td className="px-2 py-2">
+            <tbody>
+              {scans.map((scan: Scan, idx: number) => (
+                <tr
+                  key={idx}
+                  className={idx % 2 === 0 ? "bg-white" : "bg-blue-50/60"}
+                >
+                  <td className="px-2 py-2 text-center">
                     <input
                       type="checkbox"
                       checked={selected.includes(idx)}
                       onChange={() => toggleSelect(idx)}
+                      className="accent-blue-600 w-4 h-4 rounded focus:ring-2 focus:ring-blue-400"
                     />
                   </td>
-                  <td className="px-2 py-2">{scan.device_id}</td>
-                  <td className="px-2 py-2">{scan.uid ?? "-"}</td>
+                  <td className="px-2 py-2 font-medium text-blue-900">
+                    {scan.device_id}
+                  </td>
                   <td className="px-2 py-2">
+                    {scan.uid ? (
+                      <span className="bg-blue-100 px-2 py-1 rounded text-blue-800 tracking-wider shadow-sm font-mono text-xs">
+                        {scan.uid}
+                      </span>
+                    ) : (
+                      <span className="italic text-blue-300">-</span>
+                    )}
+                  </td>
+                  <td className="px-2 py-2 text-blue-800 font-medium">
                     {new Date(scan.timestamp).toLocaleString()}
                   </td>
                 </tr>
@@ -54,18 +85,31 @@ function PrintModal({ open, onClose, scans, onPrint }) {
             </tbody>
           </table>
         </div>
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 px-6 pb-6">
           <button
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-4 py-2 bg-gray-100 text-blue-700 rounded-lg font-semibold hover:bg-gray-200 border border-gray-200 shadow-sm transition"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-lg font-bold shadow-md hover:from-blue-600 hover:to-blue-800 transition disabled:opacity-60 disabled:cursor-not-allowed"
             onClick={() => onPrint(selected)}
             disabled={selected.length === 0}
           >
+            <svg
+              className="inline-block w-5 h-5 mr-1 -mt-1 align-middle"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 9v6a2 2 0 002 2h8a2 2 0 002-2V9M6 9V7a2 2 0 012-2h8a2 2 0 012 2v2M6 9h12"
+              />
+            </svg>
             Imprimir Seleccionados
           </button>
         </div>
