@@ -6,6 +6,7 @@ import {
   GlobeAmericasIcon,
   WrenchScrewdriverIcon,
   IdentificationIcon,
+  QrCodeIcon,
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,7 +15,7 @@ import clsx from "clsx";
 // Map of links to display in the side navigation.
 // Depending on the size of the application, this would be stored in a database.
 const links = [
-  { name: "Calendario", href: "/dashboard", icon: HomeIcon },
+  { name: "Calendario", href: "/dashboard/calendario", icon: HomeIcon },
   {
     name: "Control de calendario",
     href: "/dashboard/control-calendario",
@@ -31,6 +32,11 @@ const links = [
     icon: IdentificationIcon,
   },
   { name: "Mapas", href: "/dashboard/mapas", icon: GlobeAmericasIcon },
+  {
+    name: "Registros de Scans",
+    href: "/dashboard/scans",
+    icon: QrCodeIcon,
+  },
   {
     name: "Configuracion",
     href: "/dashboard/consultas",
