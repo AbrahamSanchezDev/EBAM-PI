@@ -286,7 +286,24 @@ export default function CrudCalendar() {
     defaultDate: new Date(2025, 6, 2),
     scrollToTime: new Date(1970, 1, 1, 6),
   }), []);
-
+const messages = {
+  date: "Fecha",
+  time: "Hora",
+  event: "Evento",
+  allDay: "Todo el día",
+  week: "Semana",
+  work_week: "Semana laboral",
+  day: "Día",
+  month: "Mes",
+  previous: "Anterior",
+  next: "Siguiente",
+  yesterday: "Ayer",
+  tomorrow: "Mañana",
+  today: "Hoy",
+  agenda: "Agenda",
+  noEventsInRange: "No hay eventos en este rango.",
+  showMore: (total: number) => `+ Ver más (${total})`,
+};
   return (
     <Fragment>
       <h1 className="mb-4 text-xl md:text-2xl">Calendario CRUD</h1>
@@ -303,6 +320,8 @@ export default function CrudCalendar() {
           scrollToTime={scrollToTime}
           style={{ height: 500 }}
           eventPropGetter={eventStyleGetter}
+          messages={messages}
+          culture="es"
         />
       </div>
       {selectedEvent && (
