@@ -1,5 +1,78 @@
 "use client";
 import { useEffect, useState } from "react";
+function PrintModal({ open, onClose, scans, onPrint }) {
+  const [selected, setSelected] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!open) setSelected([]);
+  }, [open]);
+
+  const toggleSelect = (idx: number) => {
+    setSelected((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    );
+  };
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
+        <h2 className="text-xl font-bold mb-4">Imprime los registros de scans</h2>
+        <div className="overflow-x-auto max-h-80 mb-4">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th></th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                  Dispositivo
+                </th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                  UID
+                </th>
+                <th className="px-2 py-2 text-xs font-semibold text-gray-700 uppercase">
+                  Fecha y Hora
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {scans.map((scan, idx) => (
+                <tr key={idx}>
+                  <td className="px-2 py-2">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(idx)}
+                      onChange={() => toggleSelect(idx)}
+                    />
+                  </td>
+                  <td className="px-2 py-2">{scan.device_id}</td>
+                  <td className="px-2 py-2">{scan.uid ?? "-"}</td>
+                  <td className="px-2 py-2">
+                    {new Date(scan.timestamp).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => onPrint(selected)}
+            disabled={selected.length === 0}
+          >
+            Imprimir Seleccionados
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface Scan {
   device_id: string;
@@ -8,6 +81,37 @@ interface Scan {
 }
 
 export default function ScansPage() {
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  // Imprimir los registros seleccionados
+  const handlePrint = (selectedIdxs: number[]) => {
+    const selectedScans = scans.filter((_, idx) => selectedIdxs.includes(idx));
+    const printWindow = window.open("", "", "width=800,height=600");
+    if (printWindow) {
+      printWindow.document.write(
+        "<html><head><title>Impresión de Registros</title>"
+      );
+      printWindow.document.write(
+        "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f3f4f6;}</style>"
+      );
+      printWindow.document.write("</head><body>");
+      printWindow.document.write("<h2>Registros de Scans Seleccionados</h2>");
+      printWindow.document.write(
+        "<table><thead><tr><th>Dispositivo</th><th>UID</th><th>Fecha y Hora</th></tr></thead><tbody>"
+      );
+      selectedScans.forEach((scan) => {
+        printWindow.document.write(
+          `<tr><td>${scan.device_id}</td><td>${scan.uid ?? "-"}</td><td>${new Date(
+            scan.timestamp
+          ).toLocaleString()}</td></tr>`
+        );
+      });
+      printWindow.document.write("</tbody></table>");
+      printWindow.document.write("</body></html>");
+      printWindow.document.close();
+      printWindow.print();
+    }
+    setPrintModalOpen(false);
+  };
   const [scans, setScans] = useState<Scan[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,6 +257,32 @@ export default function ScansPage() {
         </div>
       )}
       <div className="flex gap-4 mt-8">
+        <button
+          onClick={() => setPrintModalOpen(true)}
+          className="px-5 py-2 bg-gray-700 text-white rounded shadow hover:bg-gray-900 font-semibold transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 inline-block mr-2 -mt-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Imprimir Registros
+        </button>
+        <PrintModal
+          open={printModalOpen}
+          onClose={() => setPrintModalOpen(false)}
+          scans={scans}
+          onPrint={handlePrint}
+        />
         <button
           onClick={handleTestRFIDPost}
           className="px-5 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 font-semibold transition"
