@@ -30,13 +30,27 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Cargar la foto del localStorage solo en el cliente
+  // Cargar la foto del localStorage solo en el cliente, usando el email como clave
   useEffect(() => {
-    const fotoGuardada = localStorage.getItem("fotoPerfil");
-    if (fotoGuardada) {
-      setFoto(fotoGuardada);
+    let email = null;
+    if (profile && profile.email) {
+      email = profile.email;
+    } else {
+      try {
+        email = getCurrentUser();
+      } catch {}
     }
-  }, []);
+    if (email) {
+      const fotoGuardada = localStorage.getItem(`fotoPerfil_${email}`);
+      if (fotoGuardada) {
+        setFoto(fotoGuardada);
+      } else {
+        setFoto(null);
+      }
+    } else {
+      setFoto(null);
+    }
+  }, [profile]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -86,9 +100,9 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   };
 
   const handleGuardarFoto = () => {
-    if (previewFoto) {
+    if (previewFoto && profile && profile.email) {
       setFoto(previewFoto);
-      localStorage.setItem("fotoPerfil", previewFoto);
+      localStorage.setItem(`fotoPerfil_${profile.email}`, previewFoto);
       setShowModal(false);
       setPreviewFoto(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -230,7 +244,9 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
                 onClick={() => {
                   setFoto(null);
                   setPreviewFoto(null);
-                  localStorage.removeItem("fotoPerfil");
+                  if (profile && profile.email) {
+                    localStorage.removeItem(`fotoPerfil_${profile.email}`);
+                  }
                   if (fileInputRef.current) fileInputRef.current.value = "";
                   setShowModal(false);
                 }}
