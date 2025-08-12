@@ -11,10 +11,9 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
+import { useCurrentUserProfile } from "@/app/lib/userState";
 
-// Map of links to display in the side navigation.
-// Depending on the size of the application, this would be stored in a database.
-const links = [
+const allLinks = [
   { name: "Calendario", href: "/dashboard/calendario", icon: HomeIcon },
   {
     name: "Control de calendario",
@@ -46,6 +45,15 @@ const links = [
 
 export default function NavLinks() {
   const pathname = usePathname();
+  const profile = useCurrentUserProfile();
+
+  let links = allLinks;
+  if (profile && profile.role === "user") {
+    links = allLinks.filter((link) =>
+      ["Calendario", "Perfil", "Mapas", "Configuracion"].includes(link.name)
+    );
+  }
+
   return (
     <>
       {links.map((link) => {

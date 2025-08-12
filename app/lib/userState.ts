@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 // Devuelve solo el email guardado, o null si no hay usuario
 export const getCurrentUser = (): string | null => {
@@ -38,4 +39,24 @@ export function useProfiles() {
   }, []);
 
   return profiles;
+}
+
+export function useCurrentUserProfile() {
+  const [profile, setProfile] = useState<any>(null);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const email = getCurrentUser();
+      if (!email) return setProfile(null);
+      try {
+        const res = await axios.get("/api/profiles/me", {
+          headers: { "x-user-email": email },
+        });
+        setProfile(res.data);
+      } catch {
+        setProfile(null);
+      }
+    };
+    fetchProfile();
+  }, []);
+  return profile;
 }
