@@ -131,6 +131,26 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       window.removeEventListener("userChanged", handler);
     };
   }, []);
+  // Estado para los scans
+  const [userScans, setUserScans] = useState<any[]>([]);
+  const [loadingScans, setLoadingScans] = useState(false);
+  useEffect(() => {
+    const fetchScans = async () => {
+      if (!profile?.email) return;
+      setLoadingScans(true);
+      try {
+        const res = await fetch(`/api/scans/userScans?email=${profile.email}`);
+
+        const data = await res.json();
+        setUserScans(data.scans || []);
+      } catch {
+        setUserScans([]);
+      } finally {
+        setLoadingScans(false);
+      }
+    };
+    fetchScans();
+  }, [profile?.email]);
 
   if (loading) return <div>Cargando información...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -303,6 +323,58 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
             )}
           </tbody>
         </table>
+      </div>
+      {/* Tabla de Scans del usuario */}
+      <div className="my-8">
+        <h2 className="font-bold text-lg mb-2 text-black">
+          Registros de Scans por tus RFIDs
+        </h2>
+        {loadingScans ? (
+          <div>Cargando registros...</div>
+        ) : userScans.length === 0 ? (
+          <div className="text-gray-500">
+            No hay registros de scans para tus RFIDs.
+          </div>
+        ) : (
+          <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow">
+            <thead>
+              <tr className="bg-[#f7f9fb]">
+                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
+                  #
+                </th>
+                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
+                  RFID
+                </th>
+                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
+                  device_id
+                </th>
+                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
+                  Fecha
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {userScans.map((scan, idx) => (
+                <tr key={scan._id || idx}>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    {idx + 1}
+                  </td>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    {scan.uid || scan.device_id}
+                  </td>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    {scan.device_id || "-"}
+                  </td>
+                  <td className="border-t border-gray-200 px-4 py-2 text-base">
+                    {scan.timestamp
+                      ? new Date(scan.timestamp).toLocaleString()
+                      : "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </>
   );
