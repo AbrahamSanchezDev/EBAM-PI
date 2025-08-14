@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCurrentUserProfile } from "@/app/lib/userState";
+
 function PrintModal({ open, onClose, scans, onPrint }) {
   const [selected, setSelected] = useState<number[]>([]);
 
@@ -125,6 +128,16 @@ interface Scan {
 }
 
 export default function ScansPage() {
+  const router = useRouter();
+  const profile = useCurrentUserProfile();
+
+  if (profile && profile.role !== "admin") {
+    if (typeof window !== "undefined") {
+      router.replace("/dashboard");
+      return null;
+    }
+  }
+
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [scans, setScans] = useState<Scan[]>([]);
   const [error, setError] = useState<string | null>(null);
