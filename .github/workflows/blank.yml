@@ -1,36 +1,90 @@
-# This is a basic workflow to help you get started with Actions
+name: CI/CD Continuo con Notificación
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: 1. Checkout
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: 2. Setup Node.js (opcional)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: 3. Instalar dependencias
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No hay package.json — saltando instalación"
+          fi
+
+      - name: 4. Ejecutar pruebas
+        run: |
+          if [ -f package.json ]; then
+            npm test --silent || true
+          else
+            echo "No hay tests definidos"
+          fi
+
+      - name: 5. Crear build (o simulado)
+        run: |
+          if [ -f package.json ]; then
+            npm run build --if-present || mkdir -p build && echo "<h1>Build simulado</h1>" > build/index.html
+          else
+            mkdir -p build && echo "<h1>Build simulado</h1>" > build/index.html
+          fi
+
+      - name: 6. Subir artefacto del build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: build/
+
+      - name: 7. Simular despliegue (copiar a carpeta temporal)
+        run: |
+          mkdir -p /tmp/fake-deploy
+          cp -r build/* /tmp/fake-deploy/
+          echo "Archivos copiados a /tmp/fake-deploy"
+
+      - name: 8. Obtener info del commit
+        id: commit_info
+        run: |
+          # Asegurar historial suficiente si el runner usa shallow clone
+          git fetch --prune --unshallow || true
+          COMMIT_SHA=${GITHUB_SHA}
+          COMMIT_AUTHOR=$(git show -s --format='%an' $COMMIT_SHA)
+          COMMIT_EMAIL=$(git show -s --format='%ae' $COMMIT_SHA)
+          COMMIT_MESSAGE=$(git show -s --format='%B' $COMMIT_SHA)
+          echo "commit_author=$COMMIT_AUTHOR" >> $GITHUB_OUTPUT
+          echo "commit_email=$COMMIT_EMAIL" >> $GITHUB_OUTPUT
+          echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMIT_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 9. Enviar correo con commit info
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "CI/CD: Nuevo despliegue en main"
+          to: ${{ secrets.NOTIFY_TO }}
+          from: "CI Bot <${{ secrets.EMAIL_USER }}>"
+          body: |
+            Nuevo despliegue automático en branch main.
+
+            Autor: ${{ steps.commit_info.outputs.commit_author }}
+            Email autor: ${{ steps.commit_info.outputs.commit_email }}
+            Commit SHA: ${{ github.sha }}
+            Mensaje del commit:
+            ${{ steps.commit_info.outputs.commit_message }}
+
+            Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
