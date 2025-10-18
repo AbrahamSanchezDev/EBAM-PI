@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       grupo,
       rfids,
       calendarIds,
+      calendarNotificationMinutes,
     } = await request.json();
 
     const { db } = await connectToDatabase();
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
       grupo,
       rfids,
       calendarIds,
+      calendarNotificationMinutes: typeof calendarNotificationMinutes === 'number' ? calendarNotificationMinutes : null,
     };
 
     await db.collection("profiles").insertOne(newProfile);

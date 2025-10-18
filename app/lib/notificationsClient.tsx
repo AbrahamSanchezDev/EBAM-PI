@@ -31,6 +31,18 @@ export const useNotifications = () => {
 export const NotificationsProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  // keep seen IDs in a ref so fetch closures always see the latest
+  const seenRef = React.useRef<Record<string, boolean>>({});
+
+  // load seen ids from sessionStorage so notifications aren't shown again on reload
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("seenNotificationIds");
+      if (raw) seenRef.current = JSON.parse(raw);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const fetch = async () => {
     const email = getCurrentUser();
@@ -50,6 +62,39 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
         createdAt: x.createdAt ? new Date(x.createdAt).toISOString() : new Date().toISOString(),
         read: !!x.read,
       }));
+      // show desktop notifications for newly received items (not shown before)
+      try {
+        const newOnes = normalized.filter((it: any) => !!it.id && !seenRef.current[it.id]);
+        if (newOnes.length > 0) {
+          // request permission if not granted
+          if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+            await Notification.requestPermission().catch(() => {});
+          }
+          newOnes.forEach((it: any) => {
+            try {
+              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                // show a simple desktop notification
+                new Notification(it.from ? `${it.from}` : "Notificación", {
+                  body: it.message,
+                });
+              }
+            } catch (e) {
+              // ignore
+            }
+            // mark as seen so we don't show again
+            if (it.id) seenRef.current[it.id] = true;
+          });
+          // persist seen ids for this session
+          try {
+            sessionStorage.setItem("seenNotificationIds", JSON.stringify(seenRef.current));
+          } catch (e) {
+            // ignore
+          }
+        }
+      } catch (e) {
+        console.error("desktop notification error", e);
+      }
+
       setItems(normalized);
       setUnreadCount(res.data.count || 0);
     } catch (err) {

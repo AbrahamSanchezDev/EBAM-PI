@@ -52,6 +52,8 @@ interface Profile {
   grupo: string;
   rfids: { id: string; active: boolean }[];
   calendarIds: string[];
+  // minutes before event to receive desktop notification (null = disabled)
+  calendarNotificationMinutes?: number | null;
 }
 
 const CrudProfiles = () => {
@@ -66,6 +68,7 @@ const CrudProfiles = () => {
     grupo: "",
     rfids: [],
     calendarIds: [],
+    calendarNotificationMinutes: null,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,6 +93,12 @@ const CrudProfiles = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    // support number input for calendarNotificationMinutes
+    if (name === "calendarNotificationMinutes") {
+      const v = value === "" ? null : Number(value);
+      setForm({ ...form, [name]: v as any });
+      return;
+    }
     setForm({ ...form, [name]: value });
   };
 
@@ -153,6 +162,7 @@ const CrudProfiles = () => {
       grupo: profile.grupo || "",
       rfids: profile.rfids || [],
       calendarIds: profile.calendarIds || [],
+      calendarNotificationMinutes: (profile as any).calendarNotificationMinutes ?? null,
     });
     setEditingId(profile._id || null);
     setIsModalOpen(true);
@@ -292,6 +302,26 @@ const CrudProfiles = () => {
                   />
                   <span className="text-sm text-gray-600">{profile.name}</span>
                   <SendButton email={profile.email} name={profile.name} id={profile._id} />
+                  <button
+                    onClick={async () => {
+                      try {
+                        if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                          await Notification.requestPermission();
+                        }
+                        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                          new Notification(`Prueba: ${profile.name}`, { body: `Esta es una notificación de prueba para ${profile.email}` });
+                        } else {
+                          alert("No se pudo mostrar la notificación. Permiso denegado o no soportado.");
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert("Error mostrando notificación de prueba");
+                      }
+                    }}
+                    className="px-3 py-1 bg-indigo-500 text-white rounded"
+                  >
+                    Probar notificación de escritorio
+                  </button>
                 </div>
               </td>
             </tr>
@@ -333,6 +363,18 @@ const CrudProfiles = () => {
                 className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
                 required
               />
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700">Recibir notificaciones de calendario (minutos antes)</label>
+                <input
+                  type="number"
+                  name="calendarNotificationMinutes"
+                  value={form.calendarNotificationMinutes ?? ""}
+                  onChange={handleInputChange}
+                  placeholder="Ej: 10 (dejar vacío para desactivar)"
+                  min={0}
+                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
               <select
                 name="role"
                 value={form.role}

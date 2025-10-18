@@ -6,8 +6,9 @@ export async function PUT(request: Request) {
   try {
     const url = new URL(request.url);
     const id = url.pathname.split("/").pop();
-    const { name, email, role, matricula, carrera, grupo, rfids, calendarIds } =
-      await request.json();
+    // parse body once
+    const body = await request.json();
+    const { name, email, role, matricula, carrera, grupo, rfids, calendarIds, calendarNotificationMinutes } = body;
     const { db } = await connectToDatabase();
     await db.collection("profiles").updateOne(
       { _id: new ObjectId(id) },
@@ -21,6 +22,7 @@ export async function PUT(request: Request) {
           grupo,
           rfids,
           calendarIds,
+          calendarNotificationMinutes: typeof calendarNotificationMinutes === "number" ? calendarNotificationMinutes : null,
         },
       }
     );

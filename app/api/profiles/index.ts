@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, email, role, matricula, carrera, grupo } = await request.json();
+    const { name, email, role, matricula, carrera, grupo, calendarNotificationMinutes } = await request.json();
     const { db } = await connectToDatabase();
     const newProfile = {
       id: new ObjectId().toString(),
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       matricula,
       carrera,
       grupo,
+      calendarNotificationMinutes: typeof calendarNotificationMinutes === 'number' ? calendarNotificationMinutes : null,
     };
     await db.collection("profiles").insertOne(newProfile);
     return NextResponse.json({ message: "Profile created successfully" });

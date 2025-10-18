@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import React, { useEffect, useState } from "react";
-import { getCurrentUser } from "@/app/lib/userState";
+import { getCurrentUser, useCurrentUserProfile } from "@/app/lib/userState";
+import { useNotifications } from "@/app/lib/notificationsClient";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import es from "date-fns/locale/es";
 import { format, parse, startOfWeek, getDay, Locale } from "date-fns";
@@ -64,6 +65,92 @@ export function MyCalendar() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<any>("week");
   const [date, setDate] = useState<Date>(new Date());
+  const profile = useCurrentUserProfile();
+  const notificationsCtx = (() => {
+    try {
+      return useNotifications();
+    } catch (e) {
+      return null as any;
+    }
+  })();
+
+  // seen event notifications for this session to avoid duplicates
+  const seenEventNotifsRef = React.useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("seenEventNotifs");
+      if (raw) seenEventNotifsRef.current = JSON.parse(raw);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  // Poll calendar events for upcoming notifications
+  useEffect(() => {
+    let t: any = null;
+    const checkUpcoming = async () => {
+      try {
+        const minutesBefore = profile?.calendarNotificationMinutes;
+        if (!minutesBefore || Number.isNaN(Number(minutesBefore))) return;
+        const now = Date.now();
+        for (const ev of calendarEvents) {
+          const start = ev.start instanceof Date ? ev.start.getTime() : new Date(ev.start).getTime();
+          const diffMin = (start - now) / 60000;
+          // only notify when within threshold and in the future
+          if (diffMin <= Number(minutesBefore) && diffMin >= 0) {
+            // create a stable id for the event
+            const id = `${selectedCalendar || "cal"}-${start}-${(ev.title || "").replace(/\s+/g, "_")}`;
+            if (seenEventNotifsRef.current[id]) continue;
+
+            // mark seen immediately to avoid duplicates
+            seenEventNotifsRef.current[id] = true;
+            try {
+              sessionStorage.setItem("seenEventNotifs", JSON.stringify(seenEventNotifsRef.current));
+            } catch (e) {}
+
+            // request permission and show desktop notification
+            try {
+              if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                await Notification.requestPermission().catch(() => {});
+              }
+              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                new Notification(ev.title || "Evento próximo", { body: `Comienza en ${Math.round(diffMin)} minutos` });
+              }
+            } catch (e) {
+              console.error("Error mostrando notificación de evento", e);
+            }
+
+            // also create a server-side notification record so it appears in the bell
+            try {
+              const email = getCurrentUser();
+              if (email) {
+                const message = `Evento: ${ev.title || "(sin título)"} — comienza en ${Math.round(diffMin)} minutos`;
+                if (notificationsCtx && notificationsCtx.sendNotification) {
+                  await notificationsCtx.sendNotification(email, message, "Calendario");
+                } else {
+                  await fetch("/api/notifications", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ to: email, message, from: "Calendario" }),
+                  });
+                  // notify other UI to refresh
+                  window.dispatchEvent(new CustomEvent("notifications:changed"));
+                }
+              }
+            } catch (e) {
+              console.error("Error creando notificación en servidor", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    // check immediately and then every 30s
+    checkUpcoming();
+    t = setInterval(checkUpcoming, 30000);
+    return () => clearInterval(t);
+  }, [calendarEvents, profile, selectedCalendar]);
 
   // Ensure calendar shows today when a calendar is selected (or on mount)
   useEffect(() => {

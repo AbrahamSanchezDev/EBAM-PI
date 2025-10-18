@@ -52,11 +52,16 @@ export function useCurrentUserProfile() {
           headers: { "x-user-email": email },
         });
         setProfile(res.data);
-      } catch {
+      } catch (err) {
+        console.error("fetchProfile error", err);
         setProfile(null);
       }
     };
     fetchProfile();
+
+    const handler = () => fetchProfile();
+    window.addEventListener("userChanged", handler);
+    return () => window.removeEventListener("userChanged", handler);
   }, []);
   return profile;
 }
