@@ -225,6 +225,7 @@ export default function CrudCalendar() {
   const [calendarName, setCalendarName] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>("");
+  const [date, setDate] = useState<Date>(new Date());
 
   // Permitir que el modal agregue eventos repetidos SOLO en entorno navegador
   React.useEffect(() => {
@@ -405,7 +406,7 @@ export default function CrudCalendar() {
 
   const { defaultDate, scrollToTime } = useMemo(
     () => ({
-      defaultDate: new Date(2025, 6, 2),
+      defaultDate: new Date(),
       scrollToTime: new Date(1970, 1, 1, 6),
     }),
     []
@@ -466,6 +467,8 @@ export default function CrudCalendar() {
         <Calendar
           dayLayoutAlgorithm="no-overlap"
           defaultDate={defaultDate}
+          date={date}
+          onNavigate={(d) => setDate(d)}
           defaultView={Views.WEEK}
           events={events}
           localizer={localizer}

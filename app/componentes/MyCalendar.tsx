@@ -65,6 +65,11 @@ export function MyCalendar() {
   const [view, setView] = useState<any>("week");
   const [date, setDate] = useState<Date>(new Date());
 
+  // Ensure calendar shows today when a calendar is selected (or on mount)
+  useEffect(() => {
+    setDate(new Date());
+  }, [selectedCalendar]);
+
   // Fetch user calendar names (IDs)
   useEffect(() => {
     const fetchCalendars = async () => {
@@ -165,7 +170,8 @@ export function MyCalendar() {
             view={view}
             onView={setView}
             date={date}
-            onNavigate={setDate}
+            onNavigate={(d) => setDate(d)}
+            defaultDate={new Date()}
             defaultView="week"
             views={["month", "week", "work_week", "day", "agenda"]}
             toolbar={true}
