@@ -1,5 +1,45 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNotifications } from "@/app/lib/notificationsClient";
+
+const SendButton = ({ email, name, id }: { email: string; name: string; id?: string | null }) => {
+  const [loading, setLoading] = useState(false);
+  let notificationsCtx = null as any;
+  try {
+    notificationsCtx = useNotifications();
+  } catch (e) {
+    // not within provider
+    notificationsCtx = null;
+  }
+
+  const handleSend = async () => {
+    setLoading(true);
+    const inputId = `notif-input-${id ?? email}`;
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    const message = input?.value || `Hola ${name}, notificación de prueba`;
+    try {
+      if (notificationsCtx && notificationsCtx.sendNotification) {
+        await notificationsCtx.sendNotification(email, message, "Admin");
+      } else {
+        await axios.post("/api/notifications", { to: email, message, from: "Admin" });
+      }
+      if (input) input.value = "";
+      // trigger a client event so bell updates if recipient is current user
+      window.dispatchEvent(new CustomEvent("notifications:changed"));
+      alert("Notificación enviada");
+    } catch (err) {
+      console.error(err);
+      alert("Error enviando notificación");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <button onClick={handleSend} className="px-3 py-1 bg-green-500 text-white rounded" disabled={loading}>
+      {loading ? "Enviando..." : "Enviar"}
+    </button>
+  );
+};
 
 interface Profile {
   _id?: string;
@@ -221,24 +261,38 @@ const CrudProfiles = () => {
               <td className="border border-gray-300 p-3">{profile.email}</td>
               <td className="border border-gray-300 p-3">{profile.role}</td>
               <td className="border border-gray-300 p-3">
-                <button
-                  onClick={() => openExtraFieldsModal(profile._id!)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 mr-2"
-                >
-                  Agregar RFID y Calendarios
-                </button>
-                <button
-                  onClick={() => handleEdit(profile)}
-                  className="px-3 py-1 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 mr-2"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(profile._id!)}
-                  className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600"
-                >
-                  Eliminar
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => openExtraFieldsModal(profile._id!)}
+                    className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 mr-2"
+                  >
+                    Agregar RFID y Calendarios
+                  </button>
+                  <button
+                    onClick={() => handleEdit(profile)}
+                    className="px-3 py-1 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 mr-2"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDelete(profile._id!)}
+                    className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 mr-2"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+
+                {/* Test notification sender UI */}
+                <div className="mt-2 flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Texto de notificación"
+                    className="flex-1 p-2 border rounded"
+                    id={`notif-input-${profile._id}`}
+                  />
+                  <span className="text-sm text-gray-600">{profile.name}</span>
+                  <SendButton email={profile.email} name={profile.name} id={profile._id} />
+                </div>
               </td>
             </tr>
           ))}
