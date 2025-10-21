@@ -226,6 +226,11 @@ export default function CrudCalendar() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [availableCalendars, setAvailableCalendars] = useState<any[]>([]);
+  const [selectedLoadCalendar, setSelectedLoadCalendar] = useState<string | null>(
+    null
+  );
 
   // Permitir que el modal agregue eventos repetidos SOLO en entorno navegador
   React.useEffect(() => {
@@ -258,6 +263,42 @@ export default function CrudCalendar() {
       setSaveMessage("Error al guardar el calendario.");
     }
     setSaving(false);
+  };
+
+  const openLoadModal = async () => {
+    setLoadModalOpen(true);
+    try {
+      const res = await fetch("/api/calendars/list");
+      const data = await res.json();
+      setAvailableCalendars(data.calendars || []);
+    } catch (e) {
+      setAvailableCalendars([]);
+    }
+  };
+
+  const handleLoadCalendar = async () => {
+    if (!selectedLoadCalendar) return;
+    try {
+      const res = await fetch(
+        `/api/calendars?name=${encodeURIComponent(selectedLoadCalendar)}`
+      );
+      const data = await res.json();
+      if (data && Array.isArray(data.events)) {
+        // map event dates
+        setEvents(
+          data.events.map((ev: any) => ({
+            title: ev.title,
+            start: new Date(ev.start),
+            end: new Date(ev.end),
+            color: ev.color,
+          }))
+        );
+        setCalendarName(data.name || selectedLoadCalendar);
+      }
+    } catch (e) {
+      // ignore
+    }
+    setLoadModalOpen(false);
   };
 
   const handleSelectSlot = useCallback(
@@ -451,6 +492,12 @@ export default function CrudCalendar() {
         >
           {saving ? "Guardando..." : "Crear o Actualizar Calendario"}
         </button>
+        <button
+          onClick={openLoadModal}
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-white rounded-lg font-bold shadow-md hover:from-green-600 hover:to-green-800 transition"
+        >
+          Cargar calendarios
+        </button>
         {saveMessage && (
           <span
             className={
@@ -463,6 +510,53 @@ export default function CrudCalendar() {
           </span>
         )}
       </div>
+      {/* Load calendars modal */}
+      {loadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl p-6 w-[720px] max-w-[95vw]">
+            <h3 className="text-xl font-bold mb-4">
+              Seleccionar calendario para cargar
+            </h3>
+            <div className="max-h-60 overflow-y-auto border rounded-md p-2 mb-4">
+              {availableCalendars.length === 0 ? (
+                <div className="text-gray-500">No hay calendarios disponibles.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {availableCalendars.map((c: any) => (
+                    <li key={c.name}>
+                      <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-md p-2">
+                        <input
+                          type="radio"
+                          name="loadCalendar"
+                          value={c.name}
+                          checked={selectedLoadCalendar === c.name}
+                          onChange={() => setSelectedLoadCalendar(c.name)}
+                        />
+                        <div className="font-medium">{c.name}</div>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                onClick={() => setLoadModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handleLoadCalendar}
+                disabled={!selectedLoadCalendar}
+              >
+                Cargar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="height600">
         <Calendar
           dayLayoutAlgorithm="no-overlap"
