@@ -94,27 +94,43 @@ export function MyCalendar() {
         if (!minutesBefore || Number.isNaN(Number(minutesBefore))) return;
         const now = Date.now();
         for (const ev of calendarEvents) {
-          const start = ev.start instanceof Date ? ev.start.getTime() : new Date(ev.start).getTime();
+          const start =
+            ev.start instanceof Date
+              ? ev.start.getTime()
+              : new Date(ev.start).getTime();
           const diffMin = (start - now) / 60000;
           // only notify when within threshold and in the future
           if (diffMin <= Number(minutesBefore) && diffMin >= 0) {
             // create a stable id for the event
-            const id = `${selectedCalendar || "cal"}-${start}-${(ev.title || "").replace(/\s+/g, "_")}`;
+            const id = `${selectedCalendar || "cal"}-${start}-${(
+              ev.title || ""
+            ).replace(/\s+/g, "_")}`;
             if (seenEventNotifsRef.current[id]) continue;
 
             // mark seen immediately to avoid duplicates
             seenEventNotifsRef.current[id] = true;
             try {
-              sessionStorage.setItem("seenEventNotifs", JSON.stringify(seenEventNotifsRef.current));
+              sessionStorage.setItem(
+                "seenEventNotifs",
+                JSON.stringify(seenEventNotifsRef.current)
+              );
             } catch (e) {}
 
             // request permission and show desktop notification
             try {
-              if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+              if (
+                typeof Notification !== "undefined" &&
+                Notification.permission !== "granted"
+              ) {
                 await Notification.requestPermission().catch(() => {});
               }
-              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification(ev.title || "Evento próximo", { body: `Comienza en ${Math.round(diffMin)} minutos` });
+              if (
+                typeof Notification !== "undefined" &&
+                Notification.permission === "granted"
+              ) {
+                new Notification(ev.title || "Evento próximo", {
+                  body: `Comienza en ${Math.round(diffMin)} minutos`,
+                });
               }
             } catch (e) {
               console.error("Error mostrando notificación de evento", e);
@@ -124,9 +140,15 @@ export function MyCalendar() {
             try {
               const email = getCurrentUser();
               if (email) {
-                const message = `Evento: ${ev.title || "(sin título)"} — comienza en ${Math.round(diffMin)} minutos`;
+                const message = `Evento: ${
+                  ev.title || "(sin título)"
+                } — comienza en ${Math.round(diffMin)} minutos`;
                 if (notificationsCtx && notificationsCtx.sendNotification) {
-                  await notificationsCtx.sendNotification(email, message, "Calendario");
+                  await notificationsCtx.sendNotification(
+                    email,
+                    message,
+                    "Calendario"
+                  );
                 } else {
                   await fetch("/api/notifications", {
                     method: "POST",
@@ -221,6 +243,67 @@ export function MyCalendar() {
     fetchEvents();
   }, [selectedCalendar]);
 
+  // Request modal state (single date + separate start/end times)
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqDate, setReqDate] = useState<string>("");
+  const [reqStartTime, setReqStartTime] = useState<string>("");
+  const [reqEndTime, setReqEndTime] = useState<string>("");
+  const [reqDesc, setReqDesc] = useState<string>("");
+
+  const openRequestModal = () => {
+    if (!selectedCalendar) return alert("Selecciona un calendario primero");
+    setReqTitle("");
+    setReqDate("");
+    setReqStartTime("");
+    setReqEndTime("");
+    setReqDesc("");
+    setRequestModalOpen(true);
+  };
+
+  const submitRequest = async () => {
+    if (!reqTitle || !reqDate || !reqStartTime || !reqEndTime)
+      return alert("Por favor completa los campos obligatorios");
+
+    try {
+      // Combine date + times into ISO strings (local time -> toISOString for server)
+      const start = new Date(`${reqDate}T${reqStartTime}`);
+      const end = new Date(`${reqDate}T${reqEndTime}`);
+      if (isNaN(start.getTime()) || isNaN(end.getTime()))
+        return alert("Fecha u hora inválida");
+      if (start.getTime() >= end.getTime())
+        return alert("La hora de inicio debe ser anterior a la hora de fin");
+
+      const startIso = start.toISOString();
+      const endIso = end.toISOString();
+
+      const res = await fetch("/api/calendar-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": getCurrentUser() || "",
+        },
+        body: JSON.stringify({
+          calendarName: selectedCalendar,
+          title: reqTitle,
+          start: startIso,
+          end: endIso,
+          description: reqDesc,
+          requesterEmail: getCurrentUser(),
+        }),
+      });
+      if (res.ok) {
+        alert("Solicitud enviada. Los administradores la revisarán.");
+        setRequestModalOpen(false);
+      } else {
+        alert("Error enviando la solicitud");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error enviando la solicitud");
+    }
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <div className="mb-4 flex gap-2">
@@ -246,6 +329,14 @@ export function MyCalendar() {
           <h2 className="mb-2 text-lg font-bold text-blue-700">
             {selectedCalendar} ACTIVO
           </h2>
+          <div className="mb-4">
+            <button
+              className="px-4 py-2 bg-indigo-600 text-white rounded mr-2"
+              onClick={openRequestModal}
+            >
+              Solicitar evento
+            </button>
+          </div>
 
           <Calendar
             localizer={memoLocalizer}
@@ -266,6 +357,68 @@ export function MyCalendar() {
             messages={messages}
           />
         </>
+      )}
+      {requestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-[520px]">
+            <h3 className="text-lg font-bold mb-3">
+              Solicitar evento para {selectedCalendar}
+            </h3>
+            <label className="block mb-2">Título *</label>
+            <input
+              className="w-full border p-2 rounded mb-3"
+              value={reqTitle}
+              onChange={(e) => setReqTitle(e.target.value)}
+            />
+            <label className="block mb-2">Fecha *</label>
+            <input
+              type="date"
+              className="w-full border p-2 rounded mb-3"
+              value={reqDate}
+              onChange={(e) => setReqDate(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <div className="w-1/2">
+                <label className="block mb-2">Inicio (hora) *</label>
+                <input
+                  type="time"
+                  className="w-full border p-2 rounded mb-3"
+                  value={reqStartTime}
+                  onChange={(e) => setReqStartTime(e.target.value)}
+                />
+              </div>
+              <div className="w-1/2">
+                <label className="block mb-2">Fin (hora) *</label>
+                <input
+                  type="time"
+                  className="w-full border p-2 rounded mb-3"
+                  value={reqEndTime}
+                  onChange={(e) => setReqEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <label className="block mb-2">Descripción</label>
+            <textarea
+              className="w-full border p-2 rounded mb-3"
+              value={reqDesc}
+              onChange={(e) => setReqDesc(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 bg-gray-200 rounded"
+                onClick={() => setRequestModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+                onClick={submitRequest}
+              >
+                Enviar solicitud
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
