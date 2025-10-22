@@ -73,7 +73,26 @@ export function useCurrentUserProfile() {
     };
     fetchProfile();
 
-    const handler = () => fetchProfile();
+    const handler = (ev?: any) => {
+      // If the event provides detail with the updated profile, use it for immediate update
+      try {
+        const data = ev?.detail;
+        if (data && typeof data === "object") {
+          setProfile(data);
+          if (data?.features) {
+            try {
+              localStorage.setItem("currentUserFeatures", JSON.stringify(data.features));
+            } catch (e) {
+              console.warn("Could not persist features", e);
+            }
+          }
+          return;
+        }
+      } catch (e) {
+        // fall back to fetch
+      }
+      fetchProfile();
+    };
     window.addEventListener("userChanged", handler);
     return () => window.removeEventListener("userChanged", handler);
   }, []);

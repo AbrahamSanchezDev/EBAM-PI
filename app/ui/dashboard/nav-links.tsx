@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -12,16 +13,37 @@ type NavLinksProps = {
 export default function NavLinks({ activeClassName, iconClassName }: NavLinksProps) {
   const pathname = usePathname();
   const profile = useCurrentUserProfile();
-
   // Features can come from persisted localStorage (set at login) or from profile fetched
-  const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
-  const profileFeatures = profile?.features || null;
-  const features = profileFeatures || persistedFeatures || null;
+  const computeFeatures = (detail?: any) => {
+    // if event provided a detail object (updated profile), prefer that
+    if (detail && detail.features) return detail.features;
+    const profileFeatures = profile?.features || null;
+    const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
+    return profileFeatures || persistedFeatures || null;
+  };
 
-  // If features are null, default to showing all links (safe for initial UX)
-  const links = features
-    ? ALL_LINKS.filter((l) => features.includes(l.feature))
-    : ALL_LINKS;
+  const [activeFeatures, setActiveFeatures] = React.useState<string[] | null>(computeFeatures());
+
+  // keep features in sync when profile changes (initial fetch)
+  React.useEffect(() => {
+    setActiveFeatures(computeFeatures());
+  }, [profile]);
+
+  // Listen for userChanged events (from SSE) to recompute features immediately
+  React.useEffect(() => {
+    const handler = (ev?: any) => {
+      try {
+        const detail = ev?.detail;
+        setActiveFeatures(computeFeatures(detail));
+      } catch (e) {
+        setActiveFeatures(computeFeatures());
+      }
+    };
+    window.addEventListener("userChanged", handler);
+    return () => window.removeEventListener("userChanged", handler);
+  }, []);
+
+  const links = activeFeatures ? ALL_LINKS.filter((l) => activeFeatures.includes(l.feature)) : ALL_LINKS;
 
   return (
     <>

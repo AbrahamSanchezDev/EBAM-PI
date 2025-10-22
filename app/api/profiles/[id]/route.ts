@@ -36,6 +36,38 @@ export async function PUT(request: Request) {
       { _id: new ObjectId(id) },
       { $set: updateFields }
     );
+
+    // Fetch updated document to include identifying info in the broadcast
+    const updated = await db.collection("profiles").findOne({ _id: new ObjectId(id) });
+    try {
+      const { publish } = await import("@/app/lib/broadcaster");
+      // sanitize updated doc before broadcasting (remove sensitive fields)
+      const { password, ...safe } = (updated || {}) as any;
+      // publish the updated profile so clients can react if it's them
+      publish("profile-updated", { id, email: safe.email || null, updated: safe, updatedFields: updateFields });
+
+      // If features were changed, create a notification for the user and publish it as well
+      if (Object.prototype.hasOwnProperty.call(updateFields, "features") && safe.email) {
+        try {
+          const note = {
+            to: safe.email,
+            from: "Sistema",
+            message: "Tus permisos (features) han sido actualizados por un administrador.",
+            createdAt: new Date(),
+            data: { updatedFeatures: updateFields.features },
+          } as any;
+          // store notification in DB
+          await db.collection("notifications").insertOne(note);
+          // publish a notification-created event
+          publish("notification-created", note);
+        } catch (e) {
+          console.warn("Failed to create/publish notification for feature change", e);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to publish profile-updated event", e);
+    }
+
     return NextResponse.json({ message: "Profile updated successfully" });
   } catch (error) {
     console.error("Error updating profile:", error);
