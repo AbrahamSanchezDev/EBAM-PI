@@ -1,8 +1,7 @@
 import "@/app/ui/global.css";
 import { inter } from "@/app/ui/fonts";
 import { NotificationsProvider } from "@/app/lib/notificationsClient";
-import Bell from "@/app/ui/bell";
-import RequestsMount from "@/app/ui/requests/RequestsMount";
+import HeaderActions from "@/app/ui/header-actions";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,9 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} antialiased`}>
         <NotificationsProvider>
           <div className="w-full bg-white border-b p-3 flex justify-end items-center gap-3">
-            <Bell />
-            {/* Requests inbox for admins (client component) */}
-            <RequestsMount />
+            <HeaderActions />
           </div>
           {children}
         </NotificationsProvider>

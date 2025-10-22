@@ -330,12 +330,14 @@ export function MyCalendar() {
             {selectedCalendar} ACTIVO
           </h2>
           <div className="mb-4">
-            <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded mr-2"
-              onClick={openRequestModal}
-            >
-              Solicitar evento
-            </button>
+            {profile?.role !== "admin" && (
+              <button
+                className="px-4 py-2 bg-indigo-600 text-white rounded mr-2"
+                onClick={openRequestModal}
+              >
+                Solicitar evento
+              </button>
+            )}
           </div>
 
           <Calendar
@@ -358,7 +360,7 @@ export function MyCalendar() {
           />
         </>
       )}
-      {requestModalOpen && (
+      {requestModalOpen && profile?.role !== "admin" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 w-[520px]">
             <h3 className="text-lg font-bold mb-3">
