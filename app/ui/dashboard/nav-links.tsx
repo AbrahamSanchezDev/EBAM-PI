@@ -1,58 +1,27 @@
 "use client";
-import {
-  UserGroupIcon,
-  HomeIcon,
-  DocumentDuplicateIcon,
-  GlobeAmericasIcon,
-  WrenchScrewdriverIcon,
-  IdentificationIcon,
-  QrCodeIcon,
-} from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { useCurrentUserProfile } from "@/app/lib/userState";
+import { useCurrentUserProfile, getCurrentUserFeatures } from "@/app/lib/userState";
+import { ALL_LINKS } from "@/app/lib/featureFlags";
+type NavLinksProps = {
+  activeClassName?: string;
+  iconClassName?: string;
+};
 
-const allLinks = [
-  { name: "Calendario", href: "/dashboard/calendario", icon: HomeIcon },
-  {
-    name: "Control de calendario",
-    href: "/dashboard/control-calendario",
-    icon: DocumentDuplicateIcon,
-  },
-  {
-    name: "Perfil",
-    href: "/dashboard/perfil",
-    icon: IdentificationIcon,
-  },
-  {
-    name: "Perfiles",
-    href: "/dashboard/perfiles",
-    icon: IdentificationIcon,
-  },
-  { name: "Mapas", href: "/dashboard/mapas", icon: GlobeAmericasIcon },
-  {
-    name: "Registros de Scans",
-    href: "/dashboard/scans",
-    icon: QrCodeIcon,
-  },
-  {
-    name: "Configuracion",
-    href: "/dashboard/consultas",
-    icon: WrenchScrewdriverIcon,
-  },
-];
-
-export default function NavLinks() {
+export default function NavLinks({ activeClassName, iconClassName }: NavLinksProps) {
   const pathname = usePathname();
   const profile = useCurrentUserProfile();
 
-  let links = allLinks;
-  if (profile && profile.role === "user") {
-    links = allLinks.filter((link) =>
-      ["Calendario", "Perfil", "Mapas", "Configuracion"].includes(link.name)
-    );
-  }
+  // Features can come from persisted localStorage (set at login) or from profile fetched
+  const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
+  const profileFeatures = profile?.features || null;
+  const features = profileFeatures || persistedFeatures || null;
+
+  // If features are null, default to showing all links (safe for initial UX)
+  const links = features
+    ? ALL_LINKS.filter((l) => features.includes(l.feature))
+    : ALL_LINKS;
 
   return (
     <>
@@ -65,14 +34,11 @@ export default function NavLinks() {
             className={clsx(
               "flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-[#eaf1fa] hover:text-[#1d4a7a] md:flex-none md:justify-start md:p-2 md:px-3",
               {
-                "!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold":
-                  pathname === link.href,
+                [activeClassName || "!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold"]: pathname === link.href,
               }
             )}
           >
-            <LinkIcon
-              className={clsx("w-6", pathname === link.href ? "text-[#1d4a7a]" : "")}
-            />
+            <LinkIcon className={clsx("w-6", iconClassName || "", pathname === link.href ? "text-[#1d4a7a]" : "")} />
             <p className="hidden md:block">{link.name}</p>
           </Link>
         );

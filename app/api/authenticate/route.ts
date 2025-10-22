@@ -33,9 +33,13 @@ export async function POST(request: Request) {
     // Eliminar la contraseña antes de enviar el usuario al frontend
     const { password: _, ...userWithoutPassword } = user;
 
+    // Attach features (from DB if present, otherwise default per role)
+    const { defaultFeaturesForRole } = await import("@/app/lib/featureFlags");
+    const features = user.features || defaultFeaturesForRole(user.role);
+
     return NextResponse.json({
       redirectTo: "/dashboard",
-      user: userWithoutPassword,
+      user: { ...userWithoutPassword, features },
     });
   } catch (error) {
     console.error("Error during authentication:", error);

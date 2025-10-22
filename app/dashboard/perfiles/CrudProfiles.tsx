@@ -73,10 +73,23 @@ const CrudProfiles = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExtraFieldsModalOpen, setIsExtraFieldsModalOpen] = useState(false);
+  const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [availableFeatures, setAvailableFeatures] = useState<{ key: string; name: string }[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProfiles();
+    // load available features from central module
+    (async () => {
+      try {
+        const mod = await import("@/app/lib/featureFlags");
+        const list = (mod.ALL_LINKS || []).map((l: any) => ({ key: l.feature, name: l.name }));
+        setAvailableFeatures(list);
+      } catch (e) {
+        console.warn("Could not load feature flags", e);
+      }
+    })();
   }, []);
 
   const fetchProfiles = async () => {
@@ -166,6 +179,41 @@ const CrudProfiles = () => {
     });
     setEditingId(profile._id || null);
     setIsModalOpen(true);
+  };
+
+  const openFeaturesModal = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    const profile = profiles.find((p) => p._id === profileId) as any;
+    if (profile) {
+      setSelectedFeatures(Array.isArray(profile.features) ? profile.features : []);
+    } else {
+      setSelectedFeatures([]);
+    }
+    setIsFeaturesModalOpen(true);
+  };
+
+  const closeFeaturesModal = () => {
+    setSelectedProfileId(null);
+    setSelectedFeatures([]);
+    setIsFeaturesModalOpen(false);
+  };
+
+  const toggleFeature = (featureKey: string) => {
+    setSelectedFeatures((prev) =>
+      prev.includes(featureKey) ? prev.filter((f) => f !== featureKey) : [...prev, featureKey]
+    );
+  };
+
+  const saveFeatures = async () => {
+    try {
+      if (!selectedProfileId) return;
+      const payload: any = { features: selectedFeatures };
+      await axios.put(`/api/profiles/${selectedProfileId}`, payload);
+      fetchProfiles();
+      closeFeaturesModal();
+    } catch (e) {
+      console.error("Error saving features", e);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -277,6 +325,12 @@ const CrudProfiles = () => {
                     className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 mr-2"
                   >
                     Agregar RFID y Calendarios
+                  </button>
+                  <button
+                    onClick={() => openFeaturesModal(profile._id!)}
+                    className="px-3 py-1 bg-purple-600 text-white rounded shadow hover:bg-purple-700 mr-2"
+                  >
+                    Editar Features
                   </button>
                   <button
                     onClick={() => handleEdit(profile)}
@@ -535,6 +589,33 @@ const CrudProfiles = () => {
                 className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isFeaturesModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Editar Features</h2>
+            <div className="space-y-2">
+              {availableFeatures.map((f) => (
+                <label key={f.key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedFeatures.includes(f.key)}
+                    onChange={() => toggleFeature(f.key)}
+                  />
+                  <span>{f.name}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex space-x-4 mt-4">
+              <button onClick={saveFeatures} className="px-6 py-3 bg-blue-500 text-white rounded">
+                Guardar
+              </button>
+              <button onClick={closeFeaturesModal} className="px-6 py-3 bg-gray-500 text-white rounded">
+                Cancelar
               </button>
             </div>
           </div>

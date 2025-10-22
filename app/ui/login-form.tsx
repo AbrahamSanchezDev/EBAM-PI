@@ -24,7 +24,9 @@ export default function LoginForm() {
     try {
       const user = await authenticateUser({ email, password });
       console.log("userData:", user);
-      setCurrentUser(email);
+      // If the authenticate endpoint returns features, persist them
+      const features = user?.features || null;
+      setCurrentUser(email, features);
       window.location.href = callbackUrl;
     } catch (error: any) {
       setErrorMessage(error.message || "Ocurrió un error inesperado");
