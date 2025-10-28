@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { ObjectId } from "mongodb";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     const profiles = await db.collection("profiles").find().toArray();
     return NextResponse.json(profiles);
   } catch (error) {
@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { name, email, role, matricula, carrera, grupo, calendarNotificationMinutes } = await request.json();
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     const newProfile = {
       id: new ObjectId().toString(),
       name,

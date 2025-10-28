@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     if (!email) {
       return NextResponse.json({ error: "Email requerido" }, { status: 400 });
     }
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     // Buscar el usuario en la colección profiles
     const user = await db.collection("profiles").findOne({ email });
     if (!user) {

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
     const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {

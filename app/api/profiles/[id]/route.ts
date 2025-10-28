@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { ObjectId } from "mongodb";
 
 export async function PUT(request: Request) {
@@ -8,7 +8,7 @@ export async function PUT(request: Request) {
     const id = url.pathname.split("/").pop();
     // parse body once
     const body = await request.json();
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
 
     // Build a partial $set document only with fields that exist in the request body
     const updateFields: any = {};
@@ -79,7 +79,7 @@ export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
     const id = url.pathname.split("/").pop();
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
     await db.collection("profiles").deleteOne({ _id: new ObjectId(id) });
     return NextResponse.json({ message: "Profile deleted successfully" });
   } catch (error) {

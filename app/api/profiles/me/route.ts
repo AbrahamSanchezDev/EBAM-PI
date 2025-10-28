@@ -1,4 +1,4 @@
-import { connectToDatabase } from "../../../lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function GET(req: Request) {
   try {
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       );
     }
 
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {

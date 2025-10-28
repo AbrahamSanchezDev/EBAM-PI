@@ -37,8 +37,10 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
   // load seen ids from sessionStorage so notifications aren't shown again on reload
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("seenNotificationIds");
-      if (raw) seenRef.current = JSON.parse(raw);
+      if (typeof window !== "undefined") {
+        const raw = sessionStorage.getItem("seenNotificationIds");
+        if (raw) seenRef.current = JSON.parse(raw);
+      }
     } catch (e) {
       // ignore
     }
@@ -125,11 +127,13 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
           if (payload?.email && current && payload.email === current) {
             // update local storage features if present
             if (payload.updated?.features) {
-              try {
-                localStorage.setItem('currentUserFeatures', JSON.stringify(payload.updated.features));
-              } catch (err) {
-                console.warn('Could not persist updated features to localStorage', err);
-              }
+                try {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem('currentUserFeatures', JSON.stringify(payload.updated.features));
+                  }
+                } catch (err) {
+                  console.warn('Could not persist updated features to localStorage', err);
+                }
             }
             // dispatch userChanged with updated profile detail so hooks react immediately
             window.dispatchEvent(new CustomEvent('userChanged', { detail: payload.updated }));
@@ -149,7 +153,9 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
             // If notification includes updatedFeatures, apply them immediately
             if (payload.data?.updatedFeatures) {
               try {
-                localStorage.setItem('currentUserFeatures', JSON.stringify(payload.data.updatedFeatures));
+                if (typeof window !== "undefined") {
+                  localStorage.setItem('currentUserFeatures', JSON.stringify(payload.data.updatedFeatures));
+                }
               } catch (err) {
                 console.warn('Could not persist updated features to localStorage', err);
               }

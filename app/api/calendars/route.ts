@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     if (!name) {
       return NextResponse.json({ error: "Nombre requerido" }, { status: 400 });
     }
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     const result = await db.collection("calendarios").findOne({ name });
     if (!result) {
       return NextResponse.json(
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
 
     // Upsert calendario
     const result = await db

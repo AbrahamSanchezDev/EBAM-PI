@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { ObjectId } from "mongodb";
 
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "email query required" }, { status: 400 });
   }
 
-  const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
   const filter: any = { to: email };
   if (unreadOnly === "1") filter.read = false;
 
@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
     .limit(100)
     .toArray();
 
-  const unreadCount = await db.collection("notifications").countDocuments({ to: email, read: false });
+  // Count documents where `read` is not true (covers both `read: false` and missing `read` field)
+  const unreadCount = await db
+    .collection("notifications")
+    .countDocuments({ to: email, read: { $ne: true } });
 
   return NextResponse.json({ count: unreadCount, items });
 }
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "to and message are required" }, { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     const newNotification = {
       to,
       from: from || "system",
@@ -61,7 +64,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
 
     if (body.id) {
       const oid = new ObjectId(body.id);

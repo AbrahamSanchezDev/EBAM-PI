@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     if (!headerEmail || headerEmail !== requesterEmail) {
       return NextResponse.json({ error: "invalid user" }, { status: 403 });
     }
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     const doc = {
       calendarName,
       title,
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const email = url.searchParams.get("email");
     const forAdmin = url.searchParams.get("admin");
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     if (forAdmin === "1") {
       // only admins should call this, validate header
       const headerEmail = req.headers.get("x-user-email");
@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest) {
     const { id, action, adminEmail, responseMessage } = body;
     if (!id || !action)
       return NextResponse.json({ error: "id and action required" }, { status: 400 });
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
     // require header to match adminEmail and that user is admin
     const headerEmail = req.headers.get("x-user-email");
     if (!headerEmail || headerEmail !== adminEmail) {

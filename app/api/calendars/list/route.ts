@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function GET(req: NextRequest) {
   try {
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(req);
     const items = await db
       .collection("calendarios")
       .find({}, { projection: { name: 1 } })

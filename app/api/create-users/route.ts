@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { createProfile } from "@/app/models/user";
 
 export async function POST() {
   try {
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest();
 
     // Create admin user
     const adminUser = createProfile(

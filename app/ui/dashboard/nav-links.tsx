@@ -13,24 +13,24 @@ type NavLinksProps = {
 export default function NavLinks({ activeClassName, iconClassName }: NavLinksProps) {
   const pathname = usePathname();
   const profile = useCurrentUserProfile();
-  // Features can come from persisted localStorage (set at login) or from profile fetched
-  const computeFeatures = (detail?: any) => {
-    // if event provided a detail object (updated profile), prefer that
-    if (detail && detail.features) return detail.features;
-    const profileFeatures = profile?.features || null;
-    const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
-    return profileFeatures || persistedFeatures || null;
-  };
+  // Don't read client-only storage during render — compute features after mount to avoid
+  // hydration mismatches. Initial render (server and first client pass) will show ALL_LINKS.
+  const [activeFeatures, setActiveFeatures] = useState<string[] | null>(null);
 
-  const [activeFeatures, setActiveFeatures] = React.useState<string[] | null>(computeFeatures());
+  useEffect(() => {
+    const computeFeatures = (detail?: any) => {
+      // prefer features provided by event detail
+      if (detail && detail.features) return detail.features;
+      const profileFeatures = profile?.features || null;
+      // persisted features from localStorage are only available in browser
+      const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
+      return profileFeatures || persistedFeatures || null;
+    };
 
-  // keep features in sync when profile changes (initial fetch)
-  React.useEffect(() => {
+    // initial computation after mount
     setActiveFeatures(computeFeatures());
-  }, [profile]);
 
-  // Listen for userChanged events (from SSE) to recompute features immediately
-  React.useEffect(() => {
+    // Listen for userChanged events (from SSE) to recompute features immediately
     const handler = (ev?: any) => {
       try {
         const detail = ev?.detail;
@@ -39,9 +39,15 @@ export default function NavLinks({ activeClassName, iconClassName }: NavLinksPro
         setActiveFeatures(computeFeatures());
       }
     };
-    window.addEventListener("userChanged", handler);
-    return () => window.removeEventListener("userChanged", handler);
-  }, []);
+    if (typeof window !== "undefined") {
+      window.addEventListener("userChanged", handler);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("userChanged", handler);
+      }
+    };
+  }, [profile]);
 
   const links = activeFeatures ? ALL_LINKS.filter((l) => activeFeatures.includes(l.feature)) : ALL_LINKS;
 

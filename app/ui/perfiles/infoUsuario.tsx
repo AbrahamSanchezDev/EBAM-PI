@@ -41,10 +41,18 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       } catch {}
     }
     if (email) {
-      const fotoGuardada = localStorage.getItem(`fotoPerfil_${email}`);
-      if (fotoGuardada) {
-        setFoto(fotoGuardada);
-      } else {
+      try {
+        if (typeof window !== "undefined") {
+          const fotoGuardada = localStorage.getItem(`fotoPerfil_${email}`);
+          if (fotoGuardada) {
+            setFoto(fotoGuardada);
+          } else {
+            setFoto(null);
+          }
+        } else {
+          setFoto(null);
+        }
+      } catch (e) {
         setFoto(null);
       }
     } else {
@@ -102,7 +110,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   const handleGuardarFoto = () => {
     if (previewFoto && profile && profile.email) {
       setFoto(previewFoto);
-      localStorage.setItem(`fotoPerfil_${profile.email}`, previewFoto);
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`fotoPerfil_${profile.email}`, previewFoto);
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
       setShowModal(false);
       setPreviewFoto(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -265,7 +279,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
                   setFoto(null);
                   setPreviewFoto(null);
                   if (profile && profile.email) {
-                    localStorage.removeItem(`fotoPerfil_${profile.email}`);
+                    try {
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem(`fotoPerfil_${profile.email}`);
+                      }
+                    } catch (e) {
+                      // ignore
+                    }
                   }
                   if (fileInputRef.current) fileInputRef.current.value = "";
                   setShowModal(false);

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { ObjectId } from "mongodb";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
     const profiles = await db.collection("profiles").find().toArray();
     return NextResponse.json(profiles);
   } catch (error) {
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       features,
     } = await request.json();
 
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     const newProfile = {
       id: new ObjectId().toString(),
       name,
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { id } = await request.json();
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     await db.collection("profiles").deleteOne({ _id: new ObjectId(id) });
     return NextResponse.json({ message: "Profile deleted successfully" });
   } catch (error) {
@@ -68,7 +68,7 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, name, email, role } = await request.json();
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     await db
       .collection("profiles")
       .updateOne({ _id: new ObjectId(id) }, { $set: { name, email, role } });

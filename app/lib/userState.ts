@@ -3,29 +3,47 @@ import axios from "axios";
 
 // Devuelve solo el email guardado, o null si no hay usuario
 export const getCurrentUser = (): string | null => {
-  const email = localStorage.getItem("currentUser");
-  console.log("userState - getCurrentUser (email):", email);
-  return email || null;
+  // localStorage is only available in the browser — make this safe for server execution
+  if (typeof window === "undefined") return null;
+  try {
+    const email = localStorage.getItem("currentUser");
+    // keep lightweight logging but avoid throwing
+    // console.log("userState - getCurrentUser (email):", email);
+    return email || null;
+  } catch (e) {
+    return null;
+  }
 };
 
 // Guarda el email y opcionalmente features del usuario
 export const setCurrentUser = (email: string, features?: string[] | null): void => {
-  localStorage.setItem("currentUser", email);
-  if (features) {
-    localStorage.setItem("currentUserFeatures", JSON.stringify(features));
-  } else {
-    localStorage.removeItem("currentUserFeatures");
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("currentUser", email);
+    if (features) {
+      localStorage.setItem("currentUserFeatures", JSON.stringify(features));
+    } else {
+      localStorage.removeItem("currentUserFeatures");
+    }
+  } catch (e) {
+    // ignore storage errors
   }
-  console.log("userState - setCurrentUser (email):", email, "features:", features);
   // Dispatch a custom event to notify user change (email + features)
-  if (typeof window !== "undefined") {
+  try {
     window.dispatchEvent(new CustomEvent("userChanged", { detail: { email, features } }));
+  } catch (e) {
+    // ignore
   }
 };
 
 export const clearCurrentUser = (): void => {
-  localStorage.removeItem("currentUser");
-  localStorage.removeItem("currentUserFeatures");
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("currentUserFeatures");
+  } catch (e) {
+    // ignore
+  }
 };
 
 export const isUserLoggedIn = (): boolean => {
@@ -100,6 +118,7 @@ export function useCurrentUserProfile() {
 }
 
 export function getCurrentUserFeatures(): string[] | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem("currentUserFeatures");
     if (!raw) return null;

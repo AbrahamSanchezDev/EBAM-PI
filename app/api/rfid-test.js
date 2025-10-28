@@ -1,5 +1,4 @@
-// pages/api/rfid.js
-import { connectToDatabase } from "../lib/mongodb";
+// Test helper for RFID endpoint (no DB connection needed here)
 
 export async function testRFIDPost() {
   // Datos de prueba
