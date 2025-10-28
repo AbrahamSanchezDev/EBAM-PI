@@ -74,6 +74,8 @@ const CrudProfiles = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExtraFieldsModalOpen, setIsExtraFieldsModalOpen] = useState(false);
   const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState(false);
+  const [isDuplicateRfidModalOpen, setIsDuplicateRfidModalOpen] = useState(false);
+  const [duplicateRfidValue, setDuplicateRfidValue] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [availableFeatures, setAvailableFeatures] = useState<{ key: string; name: string }[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
@@ -116,10 +118,22 @@ const CrudProfiles = () => {
   };
 
   const handleAddToList = (field: "rfids" | "calendarIds", value: string) => {
+    const normalized = value?.toString().trim();
+    if (!normalized) return;
     if (field === "rfids") {
-      setForm({ ...form, rfids: [...form.rfids, { id: value, active: false }] });
+      // Prevent duplicates for the same user
+      const exists = form.rfids.some((r) => r.id === normalized);
+      if (exists) {
+        setDuplicateRfidValue(normalized);
+        setIsDuplicateRfidModalOpen(true);
+        return;
+      }
+      setForm({ ...form, rfids: [...form.rfids, { id: normalized, active: false }] });
     } else {
-      setForm({ ...form, calendarIds: [...form.calendarIds, value] });
+      // prevent duplicate calendar ids as well
+      const exists = form.calendarIds.includes(normalized);
+      if (exists) return;
+      setForm({ ...form, calendarIds: [...form.calendarIds, normalized] });
     }
   };
 
@@ -587,6 +601,25 @@ const CrudProfiles = () => {
               <button
                 onClick={closeExtraFieldsModal}
                 className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDuplicateRfidModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
+            <h3 className="text-lg font-bold mb-2">RFID ya registrado</h3>
+            <p className="mb-4">El RFID <span className="font-mono bg-gray-100 px-2 py-1 rounded">{duplicateRfidValue}</span> ya está registrado para este usuario.</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsDuplicateRfidModalOpen(false);
+                  setDuplicateRfidValue(null);
+                }}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
               >
                 Cerrar
               </button>
