@@ -27,7 +27,17 @@ export async function GET(req: NextRequest) {
     .collection("notifications")
     .countDocuments({ to: email, read: { $ne: true } });
 
-  return NextResponse.json({ count: unreadCount, items });
+  // Normalize items so client receives stable string ids and ISO dates
+  const normalized = items.map((it: any) => ({
+    id: it._id ? (it._id.toString ? it._id.toString() : String(it._id)) : it.id || undefined,
+    to: it.to,
+    from: it.from,
+    message: it.message,
+    createdAt: it.createdAt ? (it.createdAt instanceof Date ? it.createdAt.toISOString() : new Date(it.createdAt).toISOString()) : new Date().toISOString(),
+    read: !!it.read,
+  }));
+
+  return NextResponse.json({ count: unreadCount, items: normalized });
 }
 
 export async function POST(req: NextRequest) {
