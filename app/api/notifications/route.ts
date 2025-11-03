@@ -59,13 +59,31 @@ export async function POST(req: NextRequest) {
       read: false,
     } as any;
 
-    const r = await db.collection("profiles").findOneAndUpdate(
+    // try exact match first
+    let r = await db.collection("profiles").findOneAndUpdate(
       { email: to },
       { $push: { notifications: { $each: [notif], $position: 0 } } },
       { returnDocument: "after" }
     );
 
+    // If not found, try case-insensitive / trimmed match (handles casing or whitespace issues)
     if (!r.value) {
+      const trimmed = (to || "").toString().trim();
+      try {
+        // escape regexp special chars
+        const esc = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        r = await db.collection("profiles").findOneAndUpdate(
+          { email: { $regex: `^${esc}$`, $options: "i" } },
+          { $push: { notifications: { $each: [notif], $position: 0 } } },
+          { returnDocument: "after" }
+        );
+      } catch (e) {
+        // ignore regex errors
+      }
+    }
+
+    if (!r.value) {
+      console.warn("POST /api/notifications: recipient not found for", to);
       return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
     }
 

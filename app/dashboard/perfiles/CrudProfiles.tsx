@@ -79,6 +79,8 @@ const CrudProfiles = () => {
   const [isEmailExistsModalOpen, setIsEmailExistsModalOpen] = useState(false);
   const [emailExistsValue, setEmailExistsValue] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [isDebugeoOpen, setIsDebugeoOpen] = useState(false);
+  const [debugeoTarget, setDebugeoTarget] = useState<Profile | null>(null);
   const [availableFeatures, setAvailableFeatures] = useState<{ key: string; name: string }[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
 
@@ -368,35 +370,16 @@ const CrudProfiles = () => {
                   </button>
                 </div>
 
-                {/* Test notification sender UI */}
-                <div className="mt-2 flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Texto de notificación"
-                    className="flex-1 p-2 border rounded"
-                    id={`notif-input-${profile._id}`}
-                  />
-                  <span className="text-sm text-gray-600">{profile.name}</span>
-                  <SendButton email={profile.email} name={profile.name} id={profile._id} />
+                {/* Debugeo: opens modal with notification input, send and test actions */}
+                <div className="mt-2">
                   <button
-                    onClick={async () => {
-                      try {
-                        if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
-                          await Notification.requestPermission();
-                        }
-                        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                          new Notification(`Prueba: ${profile.name}`, { body: `Esta es una notificación de prueba para ${profile.email}` });
-                        } else {
-                          alert("No se pudo mostrar la notificación. Permiso denegado o no soportado.");
-                        }
-                      } catch (e) {
-                        console.error(e);
-                        alert("Error mostrando notificación de prueba");
-                      }
+                    onClick={() => {
+                      setDebugeoTarget(profile as Profile);
+                      setIsDebugeoOpen(true);
                     }}
-                    className="px-3 py-1 bg-indigo-500 text-white rounded"
+                    className="px-3 py-1 bg-gray-800 text-white rounded shadow hover:bg-gray-900"
                   >
-                    Probar notificación de escritorio
+                    Debugeo
                   </button>
                 </div>
               </td>
@@ -629,6 +612,65 @@ const CrudProfiles = () => {
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDebugeoOpen && debugeoTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-yellow-500 to-amber-400">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <span className="text-black text-2xl font-bold">!</span>
+              </div>
+              <div>
+                <h3 className="text-black text-lg font-bold">Debugeo — Notificaciones</h3>
+                <p className="text-black text-sm">Enviar y probar notificaciones para <span className="font-semibold">{debugeoTarget.name}</span></p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Texto de notificación"
+                  className="w-full p-3 border rounded"
+                  id={`notif-input-${debugeoTarget._id}`}
+                />
+                <div className="flex items-center space-x-2">
+                  <SendButton email={debugeoTarget.email} name={debugeoTarget.name} id={debugeoTarget._id} />
+                  <button
+                    onClick={async () => {
+                      try {
+                        if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                          await Notification.requestPermission();
+                        }
+                        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+                          new Notification(`Prueba: ${debugeoTarget.name}`, { body: `Esta es una notificación de prueba para ${debugeoTarget.email}` });
+                        } else {
+                          alert("No se pudo mostrar la notificación. Permiso denegado o no soportado.");
+                        }
+                      } catch (e) {
+                        console.error(e);
+                        alert("Error mostrando notificación de prueba");
+                      }
+                    }}
+                    className="px-3 py-1 bg-indigo-500 text-white rounded"
+                  >
+                    Probar notificación de escritorio
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setIsDebugeoOpen(false);
+                    setDebugeoTarget(null);
+                  }}
+                  className="px-4 py-2 bg-white border rounded text-gray-700 hover:shadow"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

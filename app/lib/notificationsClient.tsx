@@ -195,10 +195,38 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
   }, []);
 
   const sendNotification = async (to: string, message: string, from?: string) => {
-    await axios.post("/api/notifications", { to, message, from });
+    const normalize = (s?: string) => (s ? s.toString().trim() : "");
+    const tryPost = async (recipient: string) =>
+      axios.post("/api/notifications", { to: recipient, message, from });
+
+    // try original first
+    try {
+      await tryPost(to);
+    } catch (err: any) {
+      // if 404, attempt a normalized (trim + lowercase) retry once
+      const status = err?.response?.status;
+      if (status === 404) {
+        const alt = normalize(to).toLowerCase();
+        if (alt && alt !== to) {
+          try {
+            await tryPost(alt);
+          } catch (err2) {
+            // rethrow original error for visibility
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
+
     // if the current user is the recipient, refresh
     const me = getCurrentUser();
-    if (me === to) await fetch();
+    if (me) {
+      if (me === to || me === normalize(to).toLowerCase()) await fetch();
+    }
     // emit an event so other clients can react
     window.dispatchEvent(new CustomEvent("notifications:changed"));
   };
