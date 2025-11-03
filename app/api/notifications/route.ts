@@ -59,33 +59,51 @@ export async function POST(req: NextRequest) {
       read: false,
     } as any;
 
-    // try exact match first
-    let r = await db.collection("profiles").findOneAndUpdate(
-      { email: to },
-      { $push: { notifications: { $each: [notif], $position: 0 } } },
-      { returnDocument: "after" }
-    );
+    // Helper to clean common invisible chars and normalize
+    const clean = (s: string) =>
+      s
+        .replace(/[\u200B-\u200D\uFEFF]/g, "") // zero-width / BOM
+        .trim();
 
-    // If not found, try case-insensitive / trimmed match (handles casing or whitespace issues)
-    if (!r.value) {
-      const trimmed = (to || "").toString().trim();
+    const tryFindProfile = async (candidate: string) => {
+      // exact
+      let found = await db.collection("profiles").findOne({ email: candidate });
+      if (found) return found;
+      // case-insensitive anchored regex
       try {
-        // escape regexp special chars
-        const esc = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        r = await db.collection("profiles").findOneAndUpdate(
-          { email: { $regex: `^${esc}$`, $options: "i" } },
-          { $push: { notifications: { $each: [notif], $position: 0 } } },
-          { returnDocument: "after" }
-        );
+        const esc = candidate.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        found = await db.collection("profiles").findOne({ email: { $regex: `^${esc}$`, $options: "i" } });
+        if (found) return found;
       } catch (e) {
-        // ignore regex errors
+        // ignore
       }
-    }
+      // case-insensitive compare using $expr to lower both
+      try {
+        const lower = candidate.toLowerCase();
+        found = await db.collection("profiles").findOne({ $expr: { $eq: [{ $toLower: "$email" }, lower] } });
+        if (found) return found;
+      } catch (e) {
+        // ignore
+      }
+      return null;
+    };
 
-    if (!r.value) {
+    const cleaned = clean(to || "");
+    let profileDoc = await tryFindProfile(to as string);
+    if (!profileDoc && cleaned && cleaned !== to) profileDoc = await tryFindProfile(cleaned);
+    if (!profileDoc && cleaned) profileDoc = await tryFindProfile(cleaned.normalize("NFC"));
+
+    if (!profileDoc) {
       console.warn("POST /api/notifications: recipient not found for", to);
       return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
     }
+
+    // push notification using the canonical email from profileDoc
+    await db.collection("profiles").updateOne(
+      { email: profileDoc.email },
+      { $push: { notifications: { $each: [notif], $position: 0 } } }
+    );
+    const r = { value: true } as any;
 
     try {
       publish("notification-created", { ...notif, to });

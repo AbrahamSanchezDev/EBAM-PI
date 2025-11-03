@@ -4,6 +4,7 @@ import { useNotifications } from "@/app/lib/notificationsClient";
 
 const SendButton = ({ email, name, id }: { email: string; name: string; id?: string | null }) => {
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
   let notificationsCtx = null as any;
   try {
     notificationsCtx = useNotifications();
@@ -21,23 +22,58 @@ const SendButton = ({ email, name, id }: { email: string; name: string; id?: str
       if (notificationsCtx && notificationsCtx.sendNotification) {
         await notificationsCtx.sendNotification(email, message, "Admin");
       } else {
-        await axios.post("/api/notifications", { to: email, message, from: "Admin" });
+        // fallback: try posting directly, but handle 404 by consulting lookup and retrying
+        try {
+          await axios.post("/api/notifications", { to: email, message, from: "Admin" });
+        } catch (err: any) {
+          if (err?.response?.status === 404) {
+            try {
+              const lookup = await axios.get(`/api/profiles/lookup?email=${encodeURIComponent(email)}`);
+              const data = lookup.data || {};
+              if (data?.found && data.email) {
+                await axios.post("/api/notifications", { to: data.email, message, from: "Admin" });
+              } else {
+                const normalized = (email || "").toString().trim().toLowerCase();
+                if (normalized && normalized !== email) {
+                  await axios.post("/api/notifications", { to: normalized, message, from: "Admin" });
+                } else {
+                  throw err;
+                }
+              }
+            } catch (innerErr) {
+              throw innerErr;
+            }
+          } else {
+            throw err;
+          }
+        }
       }
       if (input) input.value = "";
       // trigger a client event so bell updates if recipient is current user
       window.dispatchEvent(new CustomEvent("notifications:changed"));
-      alert("Notificación enviada");
+      // non-blocking success feedback (avoid alert which blocks JS and can delay SSE delivery)
+      setStatusMsg("Notificación enviada");
+      setTimeout(() => setStatusMsg(null), 2500);
     } catch (err) {
       console.error(err);
-      alert("Error enviando notificación");
+      // non-blocking error feedback
+      setStatusMsg("Error enviando notificación");
+      setTimeout(() => setStatusMsg(null), 3500);
     }
     setLoading(false);
   };
 
   return (
-    <button onClick={handleSend} className="px-3 py-1 bg-green-500 text-white rounded" disabled={loading}>
-      {loading ? "Enviando..." : "Enviar"}
-    </button>
+    <div className="flex items-center space-x-2">
+      <button onClick={handleSend} className="px-3 py-1 bg-green-500 text-white rounded" disabled={loading}>
+        {loading ? "Enviando..." : "Enviar"}
+      </button>
+      {statusMsg && (
+        <span className={`text-sm ${statusMsg.startsWith("Error") ? "text-rose-600" : "text-green-600"}`}>
+          {statusMsg}
+        </span>
+      )}
+    </div>
   );
 };
 

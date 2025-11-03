@@ -195,26 +195,37 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
   }, []);
 
   const sendNotification = async (to: string, message: string, from?: string) => {
-    const normalize = (s?: string) => (s ? s.toString().trim() : "");
-    const tryPost = async (recipient: string) =>
-      axios.post("/api/notifications", { to: recipient, message, from });
-
-    // try original first
+    // Try sending as-is first. If recipient not found (404), retry with normalized email
+    const normalized = (to || "").toString().trim().toLowerCase();
     try {
-      await tryPost(to);
+      await axios.post("/api/notifications", { to, message, from });
     } catch (err: any) {
-      // if 404, attempt a normalized (trim + lowercase) retry once
-      const status = err?.response?.status;
-      if (status === 404) {
-        const alt = normalize(to).toLowerCase();
-        if (alt && alt !== to) {
-          try {
-            await tryPost(alt);
-          } catch (err2) {
-            // rethrow original error for visibility
+      // If server returned 404 (recipient not found), try normalized email once
+      if (err?.response?.status === 404) {
+        // consult lookup endpoint to try to find the canonical stored email
+        try {
+          const lookupRes = await axios.get(`/api/profiles/lookup?email=${encodeURIComponent(to)}`);
+          const data = lookupRes.data || {};
+          if (data?.found && data.email) {
+            try {
+              await axios.post("/api/notifications", { to: data.email, message, from });
+              to = data.email;
+            } catch (err3) {
+              throw err3;
+            }
+          } else if (normalized && normalized !== to) {
+            // fallback: try the basic normalized version
+            try {
+              await axios.post("/api/notifications", { to: normalized, message, from });
+              to = normalized;
+            } catch (err2) {
+              throw err2;
+            }
+          } else {
             throw err;
           }
-        } else {
+        } catch (lookupErr) {
+          // if lookup failed or didn't help, rethrow original
           throw err;
         }
       } else {
@@ -224,9 +235,7 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
 
     // if the current user is the recipient, refresh
     const me = getCurrentUser();
-    if (me) {
-      if (me === to || me === normalize(to).toLowerCase()) await fetch();
-    }
+    if (me === to) await fetch();
     // emit an event so other clients can react
     window.dispatchEvent(new CustomEvent("notifications:changed"));
   };
