@@ -50,14 +50,19 @@ export async function PUT(request: Request) {
       if (Object.prototype.hasOwnProperty.call(updateFields, "features") && safe.email) {
         try {
           const note = {
+            id: new ObjectId().toString(),
             to: safe.email,
             from: "Sistema",
             message: "Tus permisos (features) han sido actualizados por un administrador.",
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             data: { updatedFeatures: updateFields.features },
+            read: false,
           } as any;
-          // store notification in DB
-          await db.collection("notifications").insertOne(note);
+          // store notification in profile.notifications
+          await db.collection("profiles").updateOne(
+            { email: safe.email },
+            { $push: { notifications: { $each: [note], $position: 0 } } }
+          );
           // publish a notification-created event
           publish("notification-created", note);
         } catch (e) {

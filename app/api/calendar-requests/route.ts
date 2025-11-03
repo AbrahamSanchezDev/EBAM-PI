@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectFromRequest } from "@/app/lib/dbFromRequest";
+import { ObjectId } from "mongodb";
+import { publish } from "@/app/lib/broadcaster";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,15 +33,30 @@ export async function POST(req: NextRequest) {
       .findOne({ _id: res.insertedId });
     // Notify admins
     const admins = await db.collection("profiles").find({ role: "admin" }).toArray();
-    const notifications = admins.map((a: any) => ({
+    // push a notification into each admin's embedded notifications array and publish SSE
+    const notifications: any[] = admins.map((a: any) => ({
+      id: new ObjectId().toString(),
       to: a.email,
       from: requesterEmail,
       message: `Nueva solicitud de evento para el calendario \"${calendarName}\"`,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       read: false,
     }));
-    if (notifications.length > 0)
-      await db.collection("notifications").insertMany(notifications);
+    if (notifications.length > 0) {
+      await Promise.all(
+        notifications.map(async (note: any) => {
+          await db.collection("profiles").updateOne(
+            { email: note.to },
+            { $push: { notifications: { $each: [note], $position: 0 } } }
+          );
+          try {
+            publish("notification-created", note);
+          } catch (e) {
+            // non-fatal: SSE broadcaster may be unavailable
+          }
+        })
+      );
+    }
     return NextResponse.json({ ok: true, request: inserted });
   } catch (err) {
     console.error("POST /api/calendar-requests error", err);
@@ -139,13 +156,21 @@ export async function PUT(req: NextRequest) {
         (update.status === "approved"
           ? "Tu solicitud fue aprobada"
           : "Tu solicitud fue rechazada");
-      await db.collection("notifications").insertOne({
+      const note = {
+        id: new ObjectId().toString(),
         to: reqDoc.requesterEmail,
         from: adminEmail || "admin",
         message,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         read: false,
-      });
+      } as any;
+      await db.collection("profiles").updateOne(
+        { email: note.to },
+        { $push: { notifications: { $each: [note], $position: 0 } } }
+      );
+      try {
+        publish("notification-created", note);
+      } catch (e) {}
     }
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -17,6 +17,11 @@ export async function POST(request: Request) {
   try {
     const { name, email, role, matricula, carrera, grupo, calendarNotificationMinutes } = await request.json();
     const { db } = await connectFromRequest(request);
+    // Check if email already exists (case-insensitive safe check)
+  const existing = await db.collection("profiles").findOne({ email: { $regex: `^${(email || '').replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}$`, $options: 'i' } });
+    if (existing) {
+      return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+    }
     const newProfile = {
       id: new ObjectId().toString(),
       name,

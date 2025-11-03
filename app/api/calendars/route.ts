@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectFromRequest } from "@/app/lib/dbFromRequest";
+import { ObjectId } from "mongodb";
+import { publish } from "@/app/lib/broadcaster";
 
 export async function GET(req: NextRequest) {
   try {
@@ -51,21 +53,26 @@ export async function POST(req: NextRequest) {
 
     let notifiedCount = 0;
     if (users.length > 0) {
-      const notifications = users.map((u: any) => ({
+      const notifications: any[] = users.map((u: any) => ({
+        id: new ObjectId().toString(),
         to: u.email,
         from: "system",
         message: `El calendario \"${name}\" ha sido modificado.`,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         read: false,
       }));
-      const insertRes = await db
-        .collection("notifications")
-        .insertMany(notifications);
-      notifiedCount = insertRes.insertedCount || 0;
-
-      // ensure indexes exist (idempotent)
-      await db.collection("notifications").createIndex({ to: 1, read: 1 });
-      await db.collection("notifications").createIndex({ createdAt: -1 });
+      await Promise.all(
+        notifications.map(async (note: any) => {
+          const r = await db.collection("profiles").updateOne(
+            { email: note.to },
+            { $push: { notifications: { $each: [note], $position: 0 } } }
+          );
+          if (r.matchedCount > 0) notifiedCount++;
+          try {
+            publish("notification-created", note);
+          } catch (e) {}
+        })
+      );
     }
 
     return NextResponse.json({ ok: true, result, notifiedCount });

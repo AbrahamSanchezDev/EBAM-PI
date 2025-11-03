@@ -30,6 +30,14 @@ export async function POST(request: Request) {
     } = await request.json();
 
     const { db } = await connectFromRequest(request);
+    // Check if email already exists (case-insensitive)
+    if (email) {
+      const escaped = email.toString().replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const existing = await db.collection("profiles").findOne({ email: { $regex: `^${escaped}$`, $options: 'i' } });
+      if (existing) {
+        return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      }
+    }
     const newProfile = {
       id: new ObjectId().toString(),
       name,
@@ -69,6 +77,14 @@ export async function PUT(request: Request) {
   try {
     const { id, name, email, role } = await request.json();
     const { db } = await connectFromRequest(request);
+    // If email is being changed, ensure no other profile has the same email
+    if (email) {
+      const escaped = email.toString().replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const conflict = await db.collection("profiles").findOne({ email: { $regex: `^${escaped}$`, $options: 'i' }, _id: { $ne: new ObjectId(id) } });
+      if (conflict) {
+        return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      }
+    }
     await db
       .collection("profiles")
       .updateOne({ _id: new ObjectId(id) }, { $set: { name, email, role } });

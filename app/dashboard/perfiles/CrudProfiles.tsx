@@ -76,6 +76,8 @@ const CrudProfiles = () => {
   const [isFeaturesModalOpen, setIsFeaturesModalOpen] = useState(false);
   const [isDuplicateRfidModalOpen, setIsDuplicateRfidModalOpen] = useState(false);
   const [duplicateRfidValue, setDuplicateRfidValue] = useState<string | null>(null);
+  const [isEmailExistsModalOpen, setIsEmailExistsModalOpen] = useState(false);
+  const [emailExistsValue, setEmailExistsValue] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [availableFeatures, setAvailableFeatures] = useState<{ key: string; name: string }[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
@@ -173,6 +175,12 @@ const CrudProfiles = () => {
       setIsModalOpen(false);
       fetchProfiles();
     } catch (error) {
+      // If server indicates email already exists, show modal
+      if (axios.isAxiosError(error) && error.response && error.response.status === 409) {
+        setEmailExistsValue(form.email);
+        setIsEmailExistsModalOpen(true);
+        return;
+      }
       console.error("Error saving profile:", error);
     }
   };
@@ -398,100 +406,117 @@ const CrudProfiles = () => {
       </table>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-4xl">
-            <h2 className="text-xl font-bold mb-4">
-              {editingId ? "Editar Perfil" : "Crear Perfil"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleInputChange}
-                placeholder="Nombre completo"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                required
-              />
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleInputChange}
-                placeholder="Correo electrónico"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                required
-              />
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleInputChange}
-                placeholder="Contraseña inicial"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-                required
-              />
-              <div className="mt-2">
-                <label className="block text-sm font-medium text-gray-700">Recibir notificaciones de calendario (minutos antes)</label>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-sky-500">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 .88-.39 1.67-1 2.22M12 11c0-.88.39-1.67 1-2.22M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-white text-lg font-bold">{editingId ? "Editar Perfil" : "Crear Perfil"}</h3>
+                <p className="text-sky-100 text-sm">Rellena la información del usuario. El correo debe ser único.</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <input
-                  type="number"
-                  name="calendarNotificationMinutes"
-                  value={form.calendarNotificationMinutes ?? ""}
+                  type="text"
+                  name="name"
+                  value={form.name}
                   onChange={handleInputChange}
-                  placeholder="Ej: 10 (dejar vacío para desactivar)"
-                  min={0}
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Nombre completo"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  required
                 />
-              </div>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="user">Usuario</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <input
-                type="text"
-                name="matricula"
-                value={form.matricula}
-                onChange={handleInputChange}
-                placeholder="Matrícula"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-              <input
-                type="text"
-                name="carrera"
-                value={form.carrera}
-                onChange={handleInputChange}
-                placeholder="Carrera"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-              <input
-                type="text"
-                name="grupo"
-                value={form.grupo}
-                onChange={handleInputChange}
-                placeholder="Grupo"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-              <div className="flex space-x-4">
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
-                >
-                  {editingId ? "Actualizar" : "Crear"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </form>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleInputChange}
+                  placeholder="Correo electrónico"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  required
+                />
+                <input
+                  type="password"
+                  name="password"
+                  value={form.password}
+                  onChange={handleInputChange}
+                  placeholder="Contraseña inicial"
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  required
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Notificaciones (min antes)</label>
+                    <input
+                      type="number"
+                      name="calendarNotificationMinutes"
+                      value={form.calendarNotificationMinutes ?? ""}
+                      onChange={handleInputChange}
+                      placeholder="Ej: 10"
+                      min={0}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Rol</label>
+                    <select
+                      name="role"
+                      value={form.role}
+                      onChange={handleInputChange}
+                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                    >
+                      <option value="user">Usuario</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    name="matricula"
+                    value={form.matricula}
+                    onChange={handleInputChange}
+                    placeholder="Matrícula"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  />
+                  <input
+                    type="text"
+                    name="carrera"
+                    value={form.carrera}
+                    onChange={handleInputChange}
+                    placeholder="Carrera"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  />
+                  <input
+                    type="text"
+                    name="grupo"
+                    value={form.grupo}
+                    onChange={handleInputChange}
+                    placeholder="Grupo"
+                    className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-6 py-3 bg-white border rounded-lg text-gray-700 hover:shadow"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded-lg shadow hover:scale-[1.02] transition"
+                  >
+                    {editingId ? "Actualizar" : "Crear"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -609,20 +634,108 @@ const CrudProfiles = () => {
         </div>
       )}
       {isDuplicateRfidModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-            <h3 className="text-lg font-bold mb-2">RFID ya registrado</h3>
-            <p className="mb-4">El RFID <span className="font-mono bg-gray-100 px-2 py-1 rounded">{duplicateRfidValue}</span> ya está registrado para este usuario.</p>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => {
-                  setIsDuplicateRfidModalOpen(false);
-                  setDuplicateRfidValue(null);
-                }}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                Cerrar
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-rose-500 to-pink-500">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636L5.636 18.364M6 6l12 12" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-white text-lg font-bold">RFID ya registrado</h3>
+                <p className="text-rose-100 text-sm">No puede agregarse porque ya existe en este usuario.</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">El RFID <span className="font-mono bg-gray-100 px-2 py-1 rounded">{duplicateRfidValue}</span> ya está registrado para este usuario.</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setIsDuplicateRfidModalOpen(false);
+                    setDuplicateRfidValue(null);
+                    // focus email input or first input in modal for quick correction
+                    if (typeof document !== "undefined") {
+                      const el = document.querySelector('input[name="email"]') as HTMLInputElement | null;
+                      el?.focus();
+                    }
+                  }}
+                  className="px-4 py-2 bg-white border rounded text-gray-700 hover:shadow"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    // Open extra fields modal to show the list where RFIDs are managed
+                    setIsDuplicateRfidModalOpen(false);
+                    setDuplicateRfidValue(null);
+                    setIsExtraFieldsModalOpen(true);
+                    // small UX: focus the rfid input inside extra modal after a tick
+                    setTimeout(() => {
+                      if (typeof document !== "undefined") {
+                        const r = document.getElementById("rfidInput") as HTMLInputElement | null;
+                        r?.focus();
+                      }
+                    }, 120);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white rounded shadow hover:scale-[1.02] transition"
+                >
+                  Ver RFIDs
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {isEmailExistsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+            <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-sky-500">
+              <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14v7" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-white text-lg font-bold">Correo ya registrado</h3>
+                <p className="text-sky-100 text-sm">No se puede crear otra cuenta con este correo.</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 mb-4">El correo <span className="font-mono bg-gray-100 px-2 py-1 rounded">{emailExistsValue}</span> ya está registrado en el sistema.</p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setIsEmailExistsModalOpen(false);
+                    setEmailExistsValue(null);
+                    // focus the email input so user can correct it
+                    if (typeof document !== "undefined") {
+                      const el = document.querySelector('input[name="email"]') as HTMLInputElement | null;
+                      el?.focus();
+                    }
+                  }}
+                  className="px-4 py-2 bg-white border rounded text-gray-700 hover:shadow"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    // Close modal and keep the form open for correction
+                    setIsEmailExistsModalOpen(false);
+                    // small UX: focus email after a tick
+                    setTimeout(() => {
+                      if (typeof document !== "undefined") {
+                        const el = document.querySelector('input[name="email"]') as HTMLInputElement | null;
+                        el?.focus();
+                      }
+                    }, 80);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-500 text-white rounded shadow hover:scale-[1.02] transition"
+                >
+                  Corregir email
+                </button>
+              </div>
             </div>
           </div>
         </div>
