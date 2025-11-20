@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import NavLinks from "@/app/ui/dashboard/nav-links";
 import AcmeLogo from "@/app/ui/acme-logo";
 import { PowerIcon } from "@heroicons/react/24/outline";
@@ -12,10 +13,11 @@ export default function SideNav() {
         href="/"
       >
         {/* Responsive: logo a la izquierda del nombre en móvil, en columna en md+ */}
-        <div className="w-40 text-black md:w-50 flex flex-row md:flex-col justify-center items-center">
-          <img
+          <Image
             src="/logo 2.png"
             alt="Logo EBAM"
+            width={80}
+            height={80}
             className="h-12 w-12 md:h-20 md:w-20 mr-2 md:mb-2 md:mr-0"
           />
           <p
@@ -27,7 +29,6 @@ export default function SideNav() {
           >
             EBAM
           </p>
-        </div>
       </Link>
       <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
         <NavLinks
