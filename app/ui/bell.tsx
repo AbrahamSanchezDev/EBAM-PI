@@ -9,7 +9,11 @@ function truncate(s: string, n = 20) {
 }
 
 export default function Bell() {
-  const { unreadCount, items, markAllRead, refresh } = useNotifications();
+  const notifications = useNotifications();
+  const unreadCount = notifications?.unreadCount ?? 0;
+  const items = notifications?.items ?? [];
+  const markAllRead = notifications?.markAllRead ?? (async () => {});
+  const refresh = notifications?.refresh ?? (async () => {});
   const [open, setOpen] = useState(false);
   const [modalItem, setModalItem] = useState<any | null>(null);
 

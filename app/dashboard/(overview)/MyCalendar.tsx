@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import es from "date-fns/locale/es";
 import { format, parse, startOfWeek, getDay, Locale } from "date-fns";
-import "react-big-calendar/lib/css/react-big-calendar.css";
+// react-big-calendar global styles are imported from app/layout.tsx
 
 const locales = {
   es: es,

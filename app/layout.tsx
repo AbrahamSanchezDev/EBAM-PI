@@ -1,4 +1,6 @@
 import "@/app/ui/global.css";
+// react-big-calendar global styles must be imported from a top-level entry (app layout)
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import { inter } from "@/app/ui/fonts";
 import { NotificationsProvider } from "@/app/lib/notificationsClient";
 import HeaderActions from "@/app/ui/header-actions";

@@ -5,13 +5,8 @@ import { useNotifications } from "@/app/lib/notificationsClient";
 const SendButton = ({ email, name, id }: { email: string; name: string; id?: string | null }) => {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
-  let notificationsCtx = null as any;
-  try {
-    notificationsCtx = useNotifications();
-  } catch (e) {
-    // not within provider
-    notificationsCtx = null;
-  }
+  // call hook at top-level; it may return undefined when no provider is present
+  const notificationsCtx = useNotifications() as any | undefined;
 
   const handleSend = async () => {
     setLoading(true);
