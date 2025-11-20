@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import UserIcon from "./user-icon";
 import axios from "axios";
 import { getCurrentUser } from "@/app/lib/userState";
@@ -186,16 +187,18 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       <div className="flex items-center my-4 gap-6 w-full">
         <div className="flex flex-1 flex-row bg-[#f7f9fb] rounded-xl p-6 min-w-[320px] items-center shadow-sm relative overflow-visible">
           <div className="absolute right-10 -top-16">
-            <div className="relative">
               {foto ? (
-                <img
+                <Image
                   src={foto}
                   alt="Foto de perfil"
+                  width={128}
+                  height={128}
                   className="w-32 h-32 rounded-full object-cover border-2 border-gray-300 bg-white shadow"
                 />
               ) : (
                 <UserIcon className="w-32 h-32 text-gray-400 bg-white rounded-full border-2 border-gray-300 shadow p-4" />
               )}
+              
               <button
                 className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow hover:bg-blue-100 border border-blue-400"
                 title="Cambiar foto"
@@ -229,7 +232,7 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
             <span className="text-base text-black">{profile?.grupo || "-"}</span>
           </div>
         </div>
-      </div>
+      
 
       {/* Modal para cambiar foto */}
       {showModal && (
@@ -239,13 +242,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
               Cambiar foto de perfil
             </h3>
             {previewFoto ? (
-              <img
+              <Image
                 src={previewFoto}
                 alt="Foto actual"
                 className="w-24 h-24 rounded-full object-cover border-2 border-gray-300 mb-4 bg-white shadow"
               />
             ) : foto ? (
-              <img
+              <Image
                 src={foto}
                 alt="Foto actual"
                 className="w-24 h-24 rounded-full object-cover border-2 border-gray-300 mb-4 bg-white shadow"

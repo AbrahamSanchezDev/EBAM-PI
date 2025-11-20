@@ -5,6 +5,7 @@ import {
   InboxIcon,
 } from '@heroicons/react/24/outline';
 import { lusitana } from '@/app/ui/fonts';
+import Image from 'next/image';
 
 
 const iconMap = {
@@ -40,10 +41,10 @@ export function CardImage({
         style={{ minHeight: "4rem" }}
       >
         {skipCheck ? (
-          <img src={value} alt="" className="mx-auto max-h-40 rounded-lg" />
+          <Image src={value} alt="" className="mx-auto max-h-40 rounded-lg" />
         ) : (
           /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value) ? (
-            <img src={value} alt="" className="mx-auto max-h-40 rounded-lg" />
+            <Image src={value} alt="" className="mx-auto max-h-40 rounded-lg" />
           ) : (
             "cargando..."
           )
