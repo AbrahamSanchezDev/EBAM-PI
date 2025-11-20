@@ -5,7 +5,7 @@ import { useNotifications } from "@/app/lib/notificationsClient";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import es from "date-fns/locale/es";
 import { format, parse, startOfWeek, getDay, Locale } from "date-fns";
-import "react-big-calendar/lib/css/react-big-calendar.css";
+// global CSS for react-big-calendar is imported from app/layout.tsx
 import { myEventsList } from "./myEventsList";
 
 const locales = {
@@ -66,13 +66,8 @@ export function MyCalendar() {
   const [view, setView] = useState<any>("week");
   const [date, setDate] = useState<Date>(new Date());
   const profile = useCurrentUserProfile();
-  const notificationsCtx = (() => {
-    try {
-      return useNotifications();
-    } catch (e) {
-      return null as any;
-    }
-  })();
+  // call hook at top-level; it may return undefined when no provider is present
+  const notificationsCtx = useNotifications() as any | undefined;
 
   // seen event notifications for this session to avoid duplicates
   const seenEventNotifsRef = React.useRef<Record<string, boolean>>({});
@@ -172,7 +167,7 @@ export function MyCalendar() {
     checkUpcoming();
     t = setInterval(checkUpcoming, 30000);
     return () => clearInterval(t);
-  }, [calendarEvents, profile, selectedCalendar]);
+  }, [calendarEvents, profile, selectedCalendar, notificationsCtx]);
 
   // Ensure calendar shows today when a calendar is selected (or on mount)
   useEffect(() => {
@@ -205,8 +200,6 @@ export function MyCalendar() {
 
   // Fetch events for selected calendar
   useEffect(() => {
-    console.log("DATA Actual:");
-    console.table(calendarEvents);
     const fetchEvents = async () => {
       if (!selectedCalendar) return;
       setLoading(true);

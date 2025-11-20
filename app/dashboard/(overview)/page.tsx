@@ -1,4 +1,6 @@
 "use client";
+// force dynamic rendering to avoid prerender step for this page (helps diagnose prerender errors)
+export const dynamic = "force-dynamic";
 import { lusitana } from '@/app/ui/fonts';
 import { CardEmpty } from '@/app/ui/dashboard/cards_empty';
 import { MyCalendar } from '../../componentes/MyCalendar';

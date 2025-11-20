@@ -138,12 +138,6 @@ export default function ScansPage() {
   const router = useRouter();
   const profile = useCurrentUserProfile();
 
-  if (profile && profile.role !== "admin") {
-    if (typeof window !== "undefined") {
-      router.replace("/dashboard");
-      return null;
-    }
-  }
 
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [scans, setScans] = useState<Scan[]>([]);
@@ -214,6 +208,15 @@ export default function ScansPage() {
     }
     setPrintModalOpen(false);
   };
+
+  // Redirect non-admin users. Keep hooks unconditional by performing redirect inside useEffect
+  useEffect(() => {
+    if (profile && profile.role !== "admin") {
+      if (typeof window !== "undefined") {
+        router.replace("/dashboard");
+      }
+    }
+  }, [profile, router]);
 
   // Filtering logic
   useEffect(() => {

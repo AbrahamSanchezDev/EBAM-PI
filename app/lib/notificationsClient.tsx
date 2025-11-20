@@ -23,9 +23,9 @@ type ContextValue = {
 const NotificationsContext = createContext<ContextValue | undefined>(undefined);
 
 export const useNotifications = () => {
-  const ctx = useContext(NotificationsContext);
-  if (!ctx) throw new Error("useNotifications must be used within Provider");
-  return ctx;
+  // Return the context value or undefined when not within a provider.
+  // Callers should handle the possibility of `undefined`.
+  return useContext(NotificationsContext);
 };
 
 export const NotificationsProvider = ({ children }: { children: React.ReactNode }) => {
