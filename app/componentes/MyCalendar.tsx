@@ -94,27 +94,43 @@ export function MyCalendar() {
         if (!minutesBefore || Number.isNaN(Number(minutesBefore))) return;
         const now = Date.now();
         for (const ev of calendarEvents) {
-          const start = ev.start instanceof Date ? ev.start.getTime() : new Date(ev.start).getTime();
+          const start =
+            ev.start instanceof Date
+              ? ev.start.getTime()
+              : new Date(ev.start).getTime();
           const diffMin = (start - now) / 60000;
           // only notify when within threshold and in the future
           if (diffMin <= Number(minutesBefore) && diffMin >= 0) {
             // create a stable id for the event
-            const id = `${selectedCalendar || "cal"}-${start}-${(ev.title || "").replace(/\s+/g, "_")}`;
+            const id = `${selectedCalendar || "cal"}-${start}-${(
+              ev.title || ""
+            ).replace(/\s+/g, "_")}`;
             if (seenEventNotifsRef.current[id]) continue;
 
             // mark seen immediately to avoid duplicates
             seenEventNotifsRef.current[id] = true;
             try {
-              sessionStorage.setItem("seenEventNotifs", JSON.stringify(seenEventNotifsRef.current));
+              sessionStorage.setItem(
+                "seenEventNotifs",
+                JSON.stringify(seenEventNotifsRef.current)
+              );
             } catch (e) {}
 
             // request permission and show desktop notification
             try {
-              if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+              if (
+                typeof Notification !== "undefined" &&
+                Notification.permission !== "granted"
+              ) {
                 await Notification.requestPermission().catch(() => {});
               }
-              if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                new Notification(ev.title || "Evento próximo", { body: `Comienza en ${Math.round(diffMin)} minutos` });
+              if (
+                typeof Notification !== "undefined" &&
+                Notification.permission === "granted"
+              ) {
+                new Notification(ev.title || "Evento próximo", {
+                  body: `Comienza en ${Math.round(diffMin)} minutos`,
+                });
               }
             } catch (e) {
               console.error("Error mostrando notificación de evento", e);
@@ -124,9 +140,15 @@ export function MyCalendar() {
             try {
               const email = getCurrentUser();
               if (email) {
-                const message = `Evento: ${ev.title || "(sin título)"} — comienza en ${Math.round(diffMin)} minutos`;
+                const message = `Evento: ${
+                  ev.title || "(sin título)"
+                } — comienza en ${Math.round(diffMin)} minutos`;
                 if (notificationsCtx && notificationsCtx.sendNotification) {
-                  await notificationsCtx.sendNotification(email, message, "Calendario");
+                  await notificationsCtx.sendNotification(
+                    email,
+                    message,
+                    "Calendario"
+                  );
                 } else {
                   await fetch("/api/notifications", {
                     method: "POST",
@@ -221,6 +243,90 @@ export function MyCalendar() {
     fetchEvents();
   }, [selectedCalendar]);
 
+  // Request modal state (single date + separate start/end times)
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [reqTitle, setReqTitle] = useState("");
+  const [reqDate, setReqDate] = useState<string>("");
+  const [reqStartTime, setReqStartTime] = useState<string>("");
+  const [reqEndTime, setReqEndTime] = useState<string>("");
+  const [reqDesc, setReqDesc] = useState<string>("");
+  const [reqLocation, setReqLocation] = useState<string>("");
+  const [isCreateMode, setIsCreateMode] = useState(false);
+
+  const openRequestModal = () => {
+    if (!selectedCalendar) return alert("Selecciona un calendario primero");
+    setReqTitle("");
+    setReqDate("");
+    setReqStartTime("");
+    setReqEndTime("");
+    setReqDesc("");
+    setReqLocation("");
+    setIsCreateMode(false);
+    setRequestModalOpen(true);
+  };
+
+  const openCreateModalFromSlot = (slotInfo: any) => {
+    if (!selectedCalendar) return alert("Selecciona un calendario primero");
+    // slotInfo.start and slotInfo.end are Dates
+    const start = slotInfo.start ? new Date(slotInfo.start) : new Date();
+    const end = slotInfo.end ? new Date(slotInfo.end) : new Date(start.getTime() + 60 * 60 * 1000);
+
+    const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
+    const toTimeInput = (d: Date) => d.toTimeString().slice(0,5);
+
+    setReqTitle("");
+    setReqDate(toDateInput(start));
+    setReqStartTime(toTimeInput(start));
+    setReqEndTime(toTimeInput(end));
+    setReqDesc("");
+    setReqLocation("");
+    setIsCreateMode(true);
+    setRequestModalOpen(true);
+  };
+
+  const submitRequest = async () => {
+    if (!reqTitle || !reqDate || !reqStartTime || !reqEndTime)
+      return alert("Por favor completa los campos obligatorios");
+
+    try {
+      // Combine date + times into ISO strings (local time -> toISOString for server)
+      const start = new Date(`${reqDate}T${reqStartTime}`);
+      const end = new Date(`${reqDate}T${reqEndTime}`);
+      if (isNaN(start.getTime()) || isNaN(end.getTime()))
+        return alert("Fecha u hora inválida");
+      if (start.getTime() >= end.getTime())
+        return alert("La hora de inicio debe ser anterior a la hora de fin");
+
+      const startIso = start.toISOString();
+      const endIso = end.toISOString();
+
+      const res = await fetch("/api/calendar-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-email": getCurrentUser() || "",
+        },
+        body: JSON.stringify({
+          calendarName: selectedCalendar,
+          title: reqTitle,
+          start: startIso,
+          end: endIso,
+          description: reqDesc,
+          requesterEmail: getCurrentUser(),
+        }),
+      });
+      if (res.ok) {
+        alert("Solicitud enviada. Los administradores la revisarán.");
+        setRequestModalOpen(false);
+      } else {
+        alert("Error enviando la solicitud");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error enviando la solicitud");
+    }
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <div className="mb-4 flex gap-2">
@@ -246,6 +352,16 @@ export function MyCalendar() {
           <h2 className="mb-2 text-lg font-bold text-blue-700">
             {selectedCalendar} ACTIVO
           </h2>
+          <div className="mb-4">
+            {profile?.role !== "admin" && (
+              <button
+                className="px-4 py-2 bg-indigo-600 text-white rounded mr-2"
+                onClick={openRequestModal}
+              >
+                Solicitar evento
+              </button>
+            )}
+          </div>
 
           <Calendar
             localizer={memoLocalizer}
@@ -257,6 +373,15 @@ export function MyCalendar() {
             view={view}
             onView={setView}
             date={date}
+            selectable
+            onSelectSlot={(slotInfo) => {
+              try {
+                // slotInfo can be a single slot or a range with start/end
+                openCreateModalFromSlot(slotInfo);
+              } catch (e) {
+                console.error('onSelectSlot error', e);
+              }
+            }}
             onNavigate={(d) => setDate(d)}
             defaultDate={new Date()}
             defaultView="week"
@@ -266,6 +391,88 @@ export function MyCalendar() {
             messages={messages}
           />
         </>
+      )}
+      {requestModalOpen && profile?.role !== "admin" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex items-start gap-4">
+              <div className="rounded-full bg-white/20 p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{isCreateMode ? 'Crear evento' : 'Solicitar evento'} — {selectedCalendar}</h3>
+                <p className="text-sm opacity-90 mt-1">Selecciona un título, horario y una ubicación aproximada. Día: <span className="font-medium">{reqDate || '—'}</span></p>
+              </div>
+            </div>
+            <div className="p-6 grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Título *</label>
+                <input className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm focus:ring-2 focus:ring-indigo-300" value={reqTitle} onChange={(e) => setReqTitle(e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Día *</label>
+                  <input type="date" className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm" value={reqDate} onChange={(e) => setReqDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Inicio *</label>
+                  <input type="time" className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm" value={reqStartTime} onChange={(e) => setReqStartTime(e.target.value)} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fin *</label>
+                  <input type="time" className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm" value={reqEndTime} onChange={(e) => setReqEndTime(e.target.value)} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Ubicación aproximada</label>
+                <input className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm" placeholder="Ej. Auditorio, Sala 3, Oficina A" value={reqLocation} onChange={(e) => setReqLocation(e.target.value)} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Descripción (opcional)</label>
+                <textarea className="w-full border border-gray-200 rounded px-3 py-2 shadow-sm" rows={3} value={reqDesc} onChange={(e) => setReqDesc(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-4 border-t bg-white">
+              <button className="px-4 py-2 bg-white border rounded text-gray-600 hover:bg-gray-50" onClick={() => setRequestModalOpen(false)}>Cancelar</button>
+              {isCreateMode ? (
+                <button className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded shadow" onClick={async () => {
+                  // create event directly in calendar
+                  try {
+                    // validate
+                    if (!reqTitle || !reqDate || !reqStartTime || !reqEndTime) return alert('Por favor completa los campos obligatorios');
+                    const start = new Date(`${reqDate}T${reqStartTime}`);
+                    const end = new Date(`${reqDate}T${reqEndTime}`);
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return alert('Fecha u hora inválida');
+                    if (start.getTime() >= end.getTime()) return alert('La hora de inicio debe ser anterior a la hora de fin');
+
+                    const newEvent = { title: reqTitle, start: start.toISOString(), end: end.toISOString(), description: reqDesc, location: reqLocation };
+                    const updatedEvents = [...calendarEvents.map(ev => ({ ...ev, start: ev.start instanceof Date ? ev.start.toISOString() : ev.start, end: ev.end instanceof Date ? ev.end.toISOString() : ev.end })), newEvent];
+
+                    const res = await fetch('/api/calendars', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: selectedCalendar, events: updatedEvents }) });
+                    if (!res.ok) {
+                      console.error('save calendar failed', await res.text());
+                      return alert('Error guardando el evento');
+                    }
+                    // Refresh local events
+                    setCalendarEvents([...calendarEvents, { ...newEvent, start: new Date(newEvent.start), end: new Date(newEvent.end) }]);
+                    setRequestModalOpen(false);
+                  } catch (e) {
+                    console.error(e);
+                    alert('Error guardando el evento');
+                  }
+                }}>Crear evento</button>
+              ) : (
+                <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={submitRequest}>Enviar solicitud</button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

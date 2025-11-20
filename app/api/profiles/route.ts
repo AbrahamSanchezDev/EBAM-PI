@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { ObjectId } from "mongodb";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
     const profiles = await db.collection("profiles").find().toArray();
     return NextResponse.json(profiles);
   } catch (error) {
@@ -26,9 +26,18 @@ export async function POST(request: Request) {
       rfids,
       calendarIds,
       calendarNotificationMinutes,
+      features,
     } = await request.json();
 
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
+    // Check if email already exists (case-insensitive)
+    if (email) {
+      const escaped = email.toString().replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const existing = await db.collection("profiles").findOne({ email: { $regex: `^${escaped}$`, $options: 'i' } });
+      if (existing) {
+        return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      }
+    }
     const newProfile = {
       id: new ObjectId().toString(),
       name,
@@ -41,6 +50,7 @@ export async function POST(request: Request) {
       rfids,
       calendarIds,
       calendarNotificationMinutes: typeof calendarNotificationMinutes === 'number' ? calendarNotificationMinutes : null,
+      features: Array.isArray(features) ? features : null,
     };
 
     await db.collection("profiles").insertOne(newProfile);
@@ -54,7 +64,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { id } = await request.json();
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     await db.collection("profiles").deleteOne({ _id: new ObjectId(id) });
     return NextResponse.json({ message: "Profile deleted successfully" });
   } catch (error) {
@@ -66,7 +76,15 @@ export async function DELETE(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { id, name, email, role } = await request.json();
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
+    // If email is being changed, ensure no other profile has the same email
+    if (email) {
+      const escaped = email.toString().replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const conflict = await db.collection("profiles").findOne({ email: { $regex: `^${escaped}$`, $options: 'i' }, _id: { $ne: new ObjectId(id) } });
+      if (conflict) {
+        return NextResponse.json({ error: "Email already registered" }, { status: 409 });
+      }
+    }
     await db
       .collection("profiles")
       .updateOne({ _id: new ObjectId(id) }, { $set: { name, email, role } });

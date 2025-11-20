@@ -1,9 +1,9 @@
 // pages/api/rfid.js
-import { connectToDatabase } from "../lib/mongodb";
+import { connectFromRequest } from "../lib/dbFromRequest";
 
 export default async function handler(req, res) {
   try {
-    const db = await connectToDatabase();
+  const { db } = await connectFromRequest(req);
 
     // Endpoint POST - Registrar nuevo escaneo RFID
     if (req.method === "POST") {

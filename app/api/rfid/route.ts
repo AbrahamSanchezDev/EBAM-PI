@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "UID inválido" }, { status: 400 });
     }
 
-    const { db } = await connectToDatabase();
+  const { db } = await connectFromRequest(request);
     const result = await db.collection("scans").insertOne({
       uid,
       device_id,

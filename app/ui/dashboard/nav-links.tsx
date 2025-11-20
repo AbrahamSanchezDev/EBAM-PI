@@ -1,58 +1,55 @@
 "use client";
-import {
-  UserGroupIcon,
-  HomeIcon,
-  DocumentDuplicateIcon,
-  GlobeAmericasIcon,
-  WrenchScrewdriverIcon,
-  IdentificationIcon,
-  QrCodeIcon,
-} from "@heroicons/react/24/outline";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
-import { useCurrentUserProfile } from "@/app/lib/userState";
+import { useCurrentUserProfile, getCurrentUserFeatures } from "@/app/lib/userState";
+import { ALL_LINKS } from "@/app/lib/featureFlags";
+type NavLinksProps = {
+  activeClassName?: string;
+  iconClassName?: string;
+};
 
-const allLinks = [
-  { name: "Calendario", href: "/dashboard/calendario", icon: HomeIcon },
-  {
-    name: "Control de calendario",
-    href: "/dashboard/control-calendario",
-    icon: DocumentDuplicateIcon,
-  },
-  {
-    name: "Perfil",
-    href: "/dashboard/perfil",
-    icon: IdentificationIcon,
-  },
-  {
-    name: "Perfiles",
-    href: "/dashboard/perfiles",
-    icon: IdentificationIcon,
-  },
-  { name: "Mapas", href: "/dashboard/mapas", icon: GlobeAmericasIcon },
-  {
-    name: "Registros de Scans",
-    href: "/dashboard/scans",
-    icon: QrCodeIcon,
-  },
-  {
-    name: "Configuracion",
-    href: "/dashboard/consultas",
-    icon: WrenchScrewdriverIcon,
-  },
-];
-
-export default function NavLinks() {
+export default function NavLinks({ activeClassName, iconClassName }: NavLinksProps) {
   const pathname = usePathname();
   const profile = useCurrentUserProfile();
+  // Don't read client-only storage during render — compute features after mount to avoid
+  // hydration mismatches. Initial render (server and first client pass) will show ALL_LINKS.
+  const [activeFeatures, setActiveFeatures] = useState<string[] | null>(null);
 
-  let links = allLinks;
-  if (profile && profile.role === "user") {
-    links = allLinks.filter((link) =>
-      ["Calendario", "Perfil", "Mapas", "Configuracion"].includes(link.name)
-    );
-  }
+  useEffect(() => {
+    const computeFeatures = (detail?: any) => {
+      // prefer features provided by event detail
+      if (detail && detail.features) return detail.features;
+      const profileFeatures = profile?.features || null;
+      // persisted features from localStorage are only available in browser
+      const persistedFeatures = typeof window !== "undefined" ? getCurrentUserFeatures() : null;
+      return profileFeatures || persistedFeatures || null;
+    };
+
+    // initial computation after mount
+    setActiveFeatures(computeFeatures());
+
+    // Listen for userChanged events (from SSE) to recompute features immediately
+    const handler = (ev?: any) => {
+      try {
+        const detail = ev?.detail;
+        setActiveFeatures(computeFeatures(detail));
+      } catch (e) {
+        setActiveFeatures(computeFeatures());
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("userChanged", handler);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("userChanged", handler);
+      }
+    };
+  }, [profile]);
+
+  const links = activeFeatures ? ALL_LINKS.filter((l) => activeFeatures.includes(l.feature)) : ALL_LINKS;
 
   return (
     <>
@@ -65,14 +62,11 @@ export default function NavLinks() {
             className={clsx(
               "flex h-[48px] grow items-center justify-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-[#eaf1fa] hover:text-[#1d4a7a] md:flex-none md:justify-start md:p-2 md:px-3",
               {
-                "!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold":
-                  pathname === link.href,
+                [activeClassName || "!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold"]: pathname === link.href,
               }
             )}
           >
-            <LinkIcon
-              className={clsx("w-6", pathname === link.href ? "text-[#1d4a7a]" : "")}
-            />
+            <LinkIcon className={clsx("w-6", iconClassName || "", pathname === link.href ? "text-[#1d4a7a]" : "")} />
             <p className="hidden md:block">{link.name}</p>
           </Link>
         );

@@ -219,6 +219,82 @@ function EventModal({ event, onClose, onDelete, onEdit }: EventModalProps) {
   );
 }
 
+function NewEventModal({
+  start,
+  end,
+  onClose,
+  onCreate,
+}: {
+  start: Date;
+  end: Date;
+  onClose: () => void;
+  onCreate: (ev: CalendarEvent) => void;
+}) {
+  const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
+  const toTimeInput = (d: Date) => d.toTimeString().slice(0, 5);
+  const [title, setTitle] = useState("");
+  const [date, setDate] = useState<string>(toDateInput(start));
+  const [startTime, setStartTime] = useState<string>(toTimeInput(start));
+  const [endTime, setEndTime] = useState<string>(toTimeInput(end));
+  const [color, setColor] = useState<string>("#2563eb");
+
+  const handleCreate = () => {
+    if (!title || !date || !startTime || !endTime) return alert("Completa los campos obligatorios");
+    const s = new Date(`${date}T${startTime}`);
+    const e = new Date(`${date}T${endTime}`);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return alert("Fecha u hora inválida");
+    if (s.getTime() >= e.getTime()) return alert("La hora de inicio debe ser anterior a la hora de fin");
+    onCreate({ title, start: s, end: e, color });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+      <div className="bg-gradient-to-br from-white via-blue-50 to-blue-100 p-8 rounded-2xl shadow-2xl w-[560px] max-w-[95vw] border border-blue-200 relative animate-fadeIn">
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-blue-600 text-xl font-bold"
+          onClick={onClose}
+          title="Cerrar"
+        >
+          ×
+        </button>
+        <h2 className="text-2xl font-extrabold text-blue-700 mb-4 text-center tracking-tight">Crear nuevo evento</h2>
+        <input
+          className="border-2 border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg p-2 w-full mb-4 text-gray-700 placeholder:text-gray-400 transition"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Título del evento"
+        />
+
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-blue-700 mb-1">Día</label>
+            <input type="date" className="w-full border p-2 rounded" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-blue-700 mb-1">Inicio</label>
+            <input type="time" className="w-full border p-2 rounded" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-blue-700 mb-1">Fin</label>
+            <input type="time" className="w-full border p-2 rounded" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-blue-700 font-medium">Color</label>
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-10 h-10 p-0" />
+        </div>
+
+        <div className="flex gap-3 justify-end mt-6">
+          <button className="bg-white px-4 py-2 rounded border" onClick={onClose}>Cancelar</button>
+          <button className="bg-gradient-to-r from-blue-500 to-blue-700 text-white px-4 py-2 rounded font-semibold" onClick={handleCreate}>Crear evento</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CrudCalendar() {
   const [events, setEvents] = useState(initialEvents);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -226,6 +302,11 @@ export default function CrudCalendar() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [availableCalendars, setAvailableCalendars] = useState<any[]>([]);
+  const [selectedLoadCalendar, setSelectedLoadCalendar] = useState<string | null>(
+    null
+  );
 
   // Permitir que el modal agregue eventos repetidos SOLO en entorno navegador
   React.useEffect(() => {
@@ -260,15 +341,57 @@ export default function CrudCalendar() {
     setSaving(false);
   };
 
+  const openLoadModal = async () => {
+    setLoadModalOpen(true);
+    try {
+      const res = await fetch("/api/calendars/list");
+      const data = await res.json();
+      setAvailableCalendars(data.calendars || []);
+    } catch (e) {
+      setAvailableCalendars([]);
+    }
+  };
+
+  const handleLoadCalendar = async () => {
+    if (!selectedLoadCalendar) return;
+    try {
+      const res = await fetch(
+        `/api/calendars?name=${encodeURIComponent(selectedLoadCalendar)}`
+      );
+      const data = await res.json();
+      if (data && Array.isArray(data.events)) {
+        // map event dates
+        setEvents(
+          data.events.map((ev: any) => ({
+            title: ev.title,
+            start: new Date(ev.start),
+            end: new Date(ev.end),
+            color: ev.color,
+          }))
+        );
+        setCalendarName(data.name || selectedLoadCalendar);
+      }
+    } catch (e) {
+      // ignore
+    }
+    setLoadModalOpen(false);
+  };
+
   const handleSelectSlot = useCallback(
     ({ start, end }: { start: Date; end: Date }) => {
-      const title = window.prompt("Nuevo nombre de evento");
-      if (title) {
-        setEvents((prev) => [...prev, { start, end, title }]);
-      }
+      // Open a modal instead of using prompt
+      setNewEventData({ start, end });
+      setNewEventOpen(true);
     },
     []
   );
+
+  const [newEventOpen, setNewEventOpen] = useState(false);
+  const [newEventData, setNewEventData] = useState<{ start: Date; end: Date } | null>(null);
+
+  const handleCreateEvent = (ev: CalendarEvent) => {
+    setEvents((prev) => [...prev, ev]);
+  };
 
   const handleSelectEvent = useCallback((event: CalendarEvent) => {
     setSelectedEvent(event);
@@ -451,6 +574,12 @@ export default function CrudCalendar() {
         >
           {saving ? "Guardando..." : "Crear o Actualizar Calendario"}
         </button>
+        <button
+          onClick={openLoadModal}
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-700 text-white rounded-lg font-bold shadow-md hover:from-green-600 hover:to-green-800 transition"
+        >
+          Cargar calendarios
+        </button>
         {saveMessage && (
           <span
             className={
@@ -463,6 +592,53 @@ export default function CrudCalendar() {
           </span>
         )}
       </div>
+      {/* Load calendars modal */}
+      {loadModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl p-6 w-[720px] max-w-[95vw]">
+            <h3 className="text-xl font-bold mb-4">
+              Seleccionar calendario para cargar
+            </h3>
+            <div className="max-h-60 overflow-y-auto border rounded-md p-2 mb-4">
+              {availableCalendars.length === 0 ? (
+                <div className="text-gray-500">No hay calendarios disponibles.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {availableCalendars.map((c: any) => (
+                    <li key={c.name}>
+                      <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-md p-2">
+                        <input
+                          type="radio"
+                          name="loadCalendar"
+                          value={c.name}
+                          checked={selectedLoadCalendar === c.name}
+                          onChange={() => setSelectedLoadCalendar(c.name)}
+                        />
+                        <div className="font-medium">{c.name}</div>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+                onClick={() => setLoadModalOpen(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                onClick={handleLoadCalendar}
+                disabled={!selectedLoadCalendar}
+              >
+                Cargar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="height600">
         <Calendar
           dayLayoutAlgorithm="no-overlap"
@@ -482,6 +658,17 @@ export default function CrudCalendar() {
           culture="es"
         />
       </div>
+      {newEventOpen && newEventData && (
+        <NewEventModal
+          start={newEventData.start}
+          end={newEventData.end}
+          onClose={() => {
+            setNewEventOpen(false);
+            setNewEventData(null);
+          }}
+          onCreate={handleCreateEvent}
+        />
+      )}
       {selectedEvent && (
         <EventModal
           event={selectedEvent}

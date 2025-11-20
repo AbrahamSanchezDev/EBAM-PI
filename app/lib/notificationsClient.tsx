@@ -37,8 +37,10 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
   // load seen ids from sessionStorage so notifications aren't shown again on reload
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("seenNotificationIds");
-      if (raw) seenRef.current = JSON.parse(raw);
+      if (typeof window !== "undefined") {
+        const raw = sessionStorage.getItem("seenNotificationIds");
+        if (raw) seenRef.current = JSON.parse(raw);
+      }
     } catch (e) {
       // ignore
     }
@@ -112,17 +114,125 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
   const onNotifsChanged = () => fetch();
   window.addEventListener("notifications:changed", onNotifsChanged);
 
+  // Subscribe to server-sent events to receive broadcasts (profile updates, etc.)
+  let es: EventSource | null = null;
+  try {
+    if (typeof window !== "undefined") {
+      es = new EventSource('/api/broadcast/stream');
+      es.addEventListener('profile-updated', (e: any) => {
+        try {
+          const payload = JSON.parse(e.data || '{}');
+          const current = getCurrentUser();
+          console.log('SSE profile-updated received', payload, 'current:', current);
+          if (payload?.email && current && payload.email === current) {
+            // update local storage features if present
+            if (payload.updated?.features) {
+                try {
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem('currentUserFeatures', JSON.stringify(payload.updated.features));
+                  }
+                } catch (err) {
+                  console.warn('Could not persist updated features to localStorage', err);
+                }
+            }
+            // dispatch userChanged with updated profile detail so hooks react immediately
+            window.dispatchEvent(new CustomEvent('userChanged', { detail: payload.updated }));
+            // also refresh notifications
+            fetch();
+          }
+        } catch (err) {
+          console.error('Invalid SSE payload', err);
+        }
+      });
+      es.addEventListener('notification-created', (e: any) => {
+        try {
+          const payload = JSON.parse(e.data || '{}');
+          const current = getCurrentUser();
+          console.log('SSE notification-created received', payload, 'current:', current);
+          if (payload?.to && current && payload.to === current) {
+            // If notification includes updatedFeatures, apply them immediately
+            if (payload.data?.updatedFeatures) {
+              try {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem('currentUserFeatures', JSON.stringify(payload.data.updatedFeatures));
+                }
+              } catch (err) {
+                console.warn('Could not persist updated features to localStorage', err);
+              }
+              // dispatch userChanged so UI updates
+              window.dispatchEvent(new CustomEvent('userChanged', { detail: { features: payload.data.updatedFeatures } }));
+            }
+            // trigger a refetch of notifications
+            fetch();
+          }
+        } catch (err) {
+          console.error('Invalid SSE payload (notification-created)', err);
+        }
+      });
+
+      es.onopen = () => {
+        // connected
+      };
+      es.onerror = (err) => {
+        console.warn('SSE connection error', err);
+        // Try reconnect logic will be handled by browser automatically for EventSource
+      };
+    }
+  } catch (e) {
+    console.warn('SSE subscription failed', e);
+  }
+
     // poll periodically (every 30s)
     const t = setInterval(fetch, 30000);
     return () => {
       clearInterval(t);
       window.removeEventListener("userChanged", onUserChanged);
       window.removeEventListener("notifications:changed", onNotifsChanged);
+      try {
+        if (es) es.close();
+      } catch (e) {}
     };
   }, []);
 
   const sendNotification = async (to: string, message: string, from?: string) => {
-    await axios.post("/api/notifications", { to, message, from });
+    // Try sending as-is first. If recipient not found (404), retry with normalized email
+    const normalized = (to || "").toString().trim().toLowerCase();
+    try {
+      await axios.post("/api/notifications", { to, message, from });
+    } catch (err: any) {
+      // If server returned 404 (recipient not found), try normalized email once
+      if (err?.response?.status === 404) {
+        // consult lookup endpoint to try to find the canonical stored email
+        try {
+          const lookupRes = await axios.get(`/api/profiles/lookup?email=${encodeURIComponent(to)}`);
+          const data = lookupRes.data || {};
+          if (data?.found && data.email) {
+            try {
+              await axios.post("/api/notifications", { to: data.email, message, from });
+              to = data.email;
+            } catch (err3) {
+              throw err3;
+            }
+          } else if (normalized && normalized !== to) {
+            // fallback: try the basic normalized version
+            try {
+              await axios.post("/api/notifications", { to: normalized, message, from });
+              to = normalized;
+            } catch (err2) {
+              throw err2;
+            }
+          } else {
+            throw err;
+          }
+        } catch (lookupErr) {
+          // if lookup failed or didn't help, rethrow original
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
+
     // if the current user is the recipient, refresh
     const me = getCurrentUser();
     if (me === to) await fetch();

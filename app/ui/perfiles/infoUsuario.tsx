@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import UserIcon from "./user-icon";
 import axios from "axios";
 import { getCurrentUser } from "@/app/lib/userState";
+import { useRouter } from "next/navigation";
 import { el } from "date-fns/locale";
 
 interface InfoUsuarioProps {
@@ -29,6 +30,7 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
 
   // Cargar la foto del localStorage solo en el cliente, usando el email como clave
   useEffect(() => {
@@ -41,10 +43,18 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       } catch {}
     }
     if (email) {
-      const fotoGuardada = localStorage.getItem(`fotoPerfil_${email}`);
-      if (fotoGuardada) {
-        setFoto(fotoGuardada);
-      } else {
+      try {
+        if (typeof window !== "undefined") {
+          const fotoGuardada = localStorage.getItem(`fotoPerfil_${email}`);
+          if (fotoGuardada) {
+            setFoto(fotoGuardada);
+          } else {
+            setFoto(null);
+          }
+        } else {
+          setFoto(null);
+        }
+      } catch (e) {
         setFoto(null);
       }
     } else {
@@ -67,9 +77,17 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
             config = { headers: { "x-user-email": email } };
           } else {
             setProfile(null);
-            setError(
-              "No has iniciado sesión. Por favor, inicia sesión para ver tu perfil."
-            );
+            // Redirect unauthenticated users to homepage
+            try {
+              if (typeof window !== "undefined") {
+                router.replace("/");
+              }
+            } catch (e) {
+              // fallback: set an error message if redirect fails
+              setError(
+                "No has iniciado sesión. Por favor, inicia sesión para ver tu perfil."
+              );
+            }
             setLoading(false);
             return;
           }
@@ -102,7 +120,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   const handleGuardarFoto = () => {
     if (previewFoto && profile && profile.email) {
       setFoto(previewFoto);
-      localStorage.setItem(`fotoPerfil_${profile.email}`, previewFoto);
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`fotoPerfil_${profile.email}`, previewFoto);
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
       setShowModal(false);
       setPreviewFoto(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -265,7 +289,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
                   setFoto(null);
                   setPreviewFoto(null);
                   if (profile && profile.email) {
-                    localStorage.removeItem(`fotoPerfil_${profile.email}`);
+                    try {
+                      if (typeof window !== "undefined") {
+                        localStorage.removeItem(`fotoPerfil_${profile.email}`);
+                      }
+                    } catch (e) {
+                      // ignore
+                    }
                   }
                   if (fileInputRef.current) fileInputRef.current.value = "";
                   setShowModal(false);

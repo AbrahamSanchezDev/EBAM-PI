@@ -3,7 +3,6 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import es from "date-fns/locale/es";
 import { format, parse, startOfWeek, getDay, Locale } from "date-fns";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { myEventsList } from "./myEventsList";
 
 const locales = {
   es: es,

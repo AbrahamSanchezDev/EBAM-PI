@@ -1,9 +1,9 @@
-import { connectToDatabase } from "@/app/lib/mongodb";
+import { connectFromRequest } from "@/app/lib/dbFromRequest";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { db } = await connectToDatabase();
+    const { db } = await connectFromRequest(request);
     const scans = await db.collection("scans").find({}).toArray();
     return NextResponse.json(scans);
   } catch (error) {

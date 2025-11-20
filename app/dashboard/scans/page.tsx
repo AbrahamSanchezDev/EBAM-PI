@@ -3,7 +3,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUserProfile } from "@/app/lib/userState";
 
-function PrintModal({ open, onClose, scans, onPrint }) {
+interface PrintModalProps {
+  open: boolean;
+  onClose: () => void;
+  scans: Scan[];
+  onPrint: (selectedIdxs: number[]) => void;
+}
+
+function PrintModal({ open, onClose, scans, onPrint }: PrintModalProps) {
   const [selected, setSelected] = useState<number[]>([]);
 
   useEffect(() => {
