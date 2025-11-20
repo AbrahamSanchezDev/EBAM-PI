@@ -10,6 +10,7 @@
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/forms": "^0.5.10",
     "autoprefixer": "10.4.20",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "cldr-data": "^36.0.4",
     "cldrjs": "^0.5.5",
