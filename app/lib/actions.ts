@@ -142,8 +142,22 @@ export async function authenticateUser(
 
   const { email, password } = params;
 
-  if (!email || !password) {
-    throw new Error("Email and password are required" + email + " -- " + password);
+  // Server-side validation before sending to the authenticate endpoint.
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || typeof email !== "string" || !emailRegex.test(email.trim())) {
+    throw new Error("Email inválido o faltante");
+  }
+
+  if (!password || typeof password !== "string" || password.length < 6) {
+    throw new Error("Contraseña inválida o demasiado corta (mínimo 6 caracteres)");
+  }
+
+  const sanitizedEmail = email.trim();
+
+  // Basic password sanitation: disallow control characters, quotes, semicolon and backslash
+  const passwordRegex = /^[^\x00-\x1F'";\\]+$/;
+  if (!passwordRegex.test(password)) {
+    throw new Error("Contraseña contiene caracteres inválidos");
   }
 
   const response = await fetch(`${apiBaseUrl}/api/authenticate`, {
@@ -151,7 +165,8 @@ export async function authenticateUser(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, password }),
+    // Send sanitized primitives only
+    body: JSON.stringify({ email: sanitizedEmail, password }),
   });
 
   if (!response.ok) {

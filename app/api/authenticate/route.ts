@@ -4,9 +4,30 @@ import bcrypt from "bcryptjs";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
 
-  const { db } = await connectFromRequest(request);
+    const email = typeof body?.email === "string" ? body.email.trim() : undefined;
+    const password = typeof body?.password === "string" ? body.password : undefined;
+
+    // Basic validation to avoid NoSQL/SQL injection-like payloads.
+    // Require email to be a string and match a simple email regex.
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return NextResponse.json({ message: "Email inválido" }, { status: 400 });
+    }
+
+    if (!password || typeof password !== "string") {
+      return NextResponse.json({ message: "Contraseña inválida" }, { status: 400 });
+    }
+
+    // Password character whitelist: reject control chars, single/double quotes, semicolon and backslash
+    const passwordRegex = /^[^\x00-\x1F'";\\]+$/;
+    if (!passwordRegex.test(password)) {
+      return NextResponse.json({ message: "Contraseña contiene caracteres inválidos" }, { status: 400 });
+    }
+
+    const { db } = await connectFromRequest(request);
+    // Use the validated `email` (string) to avoid query operator injection.
     const user = await db.collection("profiles").findOne({ email });
 
     if (!user) {
@@ -16,11 +37,22 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log("Password ingresado:", password);
-    console.log("Password del usuario :", user.password);
-
-    // const isPasswordValid = await bcrypt.compare(password, user.password);
-    const isPasswordValid = password === user.password; // For simplicity, using plain text comparison
+    // Don't log passwords. Support hashed passwords when present.
+    let isPasswordValid = false;
+    try {
+      if (typeof user.password === "string") {
+        // If password looks like a bcrypt hash, use bcrypt.compare
+        if (user.password.startsWith("$2a$") || user.password.startsWith("$2b$") || user.password.startsWith("$2y$")) {
+          isPasswordValid = await bcrypt.compare(password, user.password);
+        } else {
+          // Fallback to plain comparison (existing data might be plaintext) - consider migrating to hashed passwords.
+          isPasswordValid = password === user.password;
+        }
+      }
+    } catch (err) {
+      console.error("Error validating password:", err);
+      return NextResponse.json({ message: "Error durante la autenticación" }, { status: 500 });
+    }
     if (!isPasswordValid) {
       return NextResponse.json(
         {
