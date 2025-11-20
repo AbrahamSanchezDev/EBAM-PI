@@ -133,7 +133,9 @@ export async function authenticate(
     throw error;
   }
 }
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000";
+// Use a relative API path so client and server both call the correct deployment URL
+// (avoids needing NEXT_PUBLIC_API_BASE_URL to be set in every environment).
+const apiBaseUrl = ""; // empty means use relative paths like `/api/authenticate`
 
 export async function authenticateUser(
   params: { email?: string; password?: string } = {}
@@ -160,7 +162,8 @@ export async function authenticateUser(
     throw new Error("Contraseña contiene caracteres inválidos");
   }
 
-  const response = await fetch(`${apiBaseUrl}/api/authenticate`, {
+  const url = apiBaseUrl ? `${apiBaseUrl}/api/authenticate` : `/api/authenticate`;
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
