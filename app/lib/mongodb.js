@@ -74,7 +74,7 @@ export async function connectToDatabase(options = {}) {
     return { client, db };
   } catch (error) {
     console.error("Error al conectar a MongoDB:", error);
-    throw new Error("No se pudo conectar a la base de datos");
+    throw new Error("No se pudo conectar a la base de datos :", error);
   }
 }
 
