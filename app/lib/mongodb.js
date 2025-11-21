@@ -18,28 +18,57 @@ let cachedDbs = {};
  */
 export async function connectToDatabase(options = {}) {
   const useAtlas = Boolean(options.useAtlas);
-  // Prefer explicit MONGODB_URI if provided (sensible para producción / Vercel).
-  // Si no está, respetamos la opción useAtlas para elegir entre ATLAS o LOCAL.
-  const uri = MONGODB_URI || (useAtlas ? (MONGODB_URI_ATLAS || MONGODB_URI_LOCAL) : MONGODB_URI_LOCAL);
-  const cacheKey = uri + "::" + MONGODB_DB;
 
-  // Determine a non-sensitive source label for logging (do not print full URIs)
-  const source = MONGODB_URI
-    ? "MONGODB_URI"
-    : useAtlas
-    ? MONGODB_URI_ATLAS
-      ? "MONGODB_URI_ATLAS"
-      : "MONGODB_URI_LOCAL"
-    : "MONGODB_URI_LOCAL";
-
-  // If running in production / Vercel and no production URI is provided, fail fast
+  // Determine environment flags
   const isProduction = process.env.VERCEL === "1" || !!process.env.VERCEL_URL || process.env.NODE_ENV === "production";
-  if (isProduction && !MONGODB_URI && !(useAtlas && MONGODB_URI_ATLAS)) {
-    console.error("Falta MONGODB_URI en entorno de producción. Configure la variable de entorno en Vercel o provea MONGODB_URI_ATLAS.");
-    throw new Error("MONGODB_URI no configurada en el entorno de producción. Configure la variable de entorno 'MONGODB_URI' en su hosting.");
+  const DEFAULT_USE_ATLAS = String(process.env.MONGODB_DEFAULT_USE_ATLAS || "false").toLowerCase() === "true";
+
+  // Decide source preference:
+  // - In production (Vercel) prefer MONGODB_URI_ATLAS if available (common deployment pattern).
+  // - Otherwise prefer explicit MONGODB_URI if provided.
+  let chosenSource = null;
+  let chosenUri = "";
+
+  if (isProduction && MONGODB_URI_ATLAS) {
+    chosenSource = "MONGODB_URI_ATLAS";
+    chosenUri = MONGODB_URI_ATLAS;
+  } else if (MONGODB_URI) {
+    chosenSource = "MONGODB_URI";
+    chosenUri = MONGODB_URI;
+  } else if (useAtlas && MONGODB_URI_ATLAS) {
+    chosenSource = "MONGODB_URI_ATLAS";
+    chosenUri = MONGODB_URI_ATLAS;
+  } else if (DEFAULT_USE_ATLAS && MONGODB_URI_ATLAS) {
+    chosenSource = "MONGODB_URI_ATLAS";
+    chosenUri = MONGODB_URI_ATLAS;
+  } else {
+    chosenSource = "MONGODB_URI_LOCAL";
+    chosenUri = MONGODB_URI_LOCAL;
   }
 
-  console.log("Conectando a MongoDB usando fuente:", source);
+  // If running in production / Vercel and no production URI is provided, fail fast
+  if (isProduction && chosenSource === "MONGODB_URI_LOCAL") {
+    console.error("Falta MONGODB_URI_ATLAS (o MONGODB_URI) en entorno de producción. Configure la variable de entorno en Vercel.");
+    throw new Error("MONGODB URI de producción no configurada. Configure 'MONGODB_URI' o 'MONGODB_URI_ATLAS' en su hosting.");
+  }
+
+  // Extract host(s) portion for safe logging (strip credentials and DB path)
+  let hostLabel = "unknown";
+  try {
+    // Remove protocol
+    const afterProto = chosenUri.replace(/^.*?:\/\//, "");
+    // Remove credentials if present (user:pass@)
+    const noCreds = afterProto.includes("@") ? afterProto.split("@").pop() : afterProto;
+    // Host is up to the first '/' (which starts the DB/path)
+    hostLabel = noCreds.split("/")[0];
+  } catch (e) {
+    hostLabel = "unknown";
+  }
+
+  console.log("Conectando a MongoDB usando fuente:", chosenSource, "host:", hostLabel);
+
+  const uriToUse = chosenUri;
+  const cacheKey = uriToUse + "::" + MONGODB_DB;
 
   if (cachedClients[cacheKey] && cachedDbs[cacheKey]) {
     return { client: cachedClients[cacheKey], db: cachedDbs[cacheKey] };
@@ -47,7 +76,7 @@ export async function connectToDatabase(options = {}) {
 
   // El driver moderno ignora `useNewUrlParser` y `useUnifiedTopology` (deprecated).
   // Mantener timeouts útiles y familia IPv4 preferida si se desea.
-  const client = new MongoClient(uri, {
+  const client = new MongoClient(uriToUse, {
     serverSelectionTimeoutMS: 10000,
     connectTimeoutMS: 10000,
     socketTimeoutMS: 45000,
@@ -73,8 +102,8 @@ export async function connectToDatabase(options = {}) {
 
     return { client, db };
   } catch (error) {
-    console.error("Error al conectar a MongoDB:", error);
-    throw new Error("No se pudo conectar a la base de datos :", error);
+    console.error("Error al conectar a MongoDB: -- ", error);
+    throw new Error("No se pudo conectar a la base de datos :... ", error);
   }
 }
 
