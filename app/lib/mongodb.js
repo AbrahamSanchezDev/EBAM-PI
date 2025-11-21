@@ -2,8 +2,10 @@
 import { MongoClient } from "mongodb";
 
 // Lectura de URIs desde variables de entorno. Dejar placeholders en el .env
-const MONGODB_URI_LOCAL = process.env.MONGODB_URI_LOCAL || process.env.MONGODB_URI || "mongodb://localhost:27017/rfid";
+const MONGODB_URI_LOCAL = process.env.MONGODB_URI_LOCAL || "mongodb://localhost:27017/rfid";
 const MONGODB_URI_ATLAS = process.env.MONGODB_URI_ATLAS || ""; // dejar vacío en repo, rellenar en .env
+// `MONGODB_URI` es la forma recomendada: si está definida la usamos siempre (por ejemplo en Vercel)
+const MONGODB_URI = process.env.MONGODB_URI || "";
 const MONGODB_DB = process.env.MONGODB_DB || "BD";
 
 // Cache de la conexión por URI para evitar múltiples conexiones redundantes
@@ -16,17 +18,19 @@ let cachedDbs = {};
  */
 export async function connectToDatabase(options = {}) {
   const useAtlas = Boolean(options.useAtlas);
-  const uri = useAtlas ? (MONGODB_URI_ATLAS || MONGODB_URI_LOCAL) : MONGODB_URI_LOCAL;
+  // Prefer explicit MONGODB_URI if provided (sensible para producción / Vercel).
+  // Si no está, respetamos la opción useAtlas para elegir entre ATLAS o LOCAL.
+  const uri = MONGODB_URI || (useAtlas ? (MONGODB_URI_ATLAS || MONGODB_URI_LOCAL) : MONGODB_URI_LOCAL);
   const cacheKey = uri + "::" + MONGODB_DB;
 
   if (cachedClients[cacheKey] && cachedDbs[cacheKey]) {
     return { client: cachedClients[cacheKey], db: cachedDbs[cacheKey] };
   }
 
+  // El driver moderno ignora `useNewUrlParser` y `useUnifiedTopology` (deprecated).
+  // Mantener timeouts útiles y familia IPv4 preferida si se desea.
   const client = new MongoClient(uri, {
-    // opciones modernas, algunas propiedades permanecen para compatibilidad
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000,
     connectTimeoutMS: 10000,
     socketTimeoutMS: 45000,
   });
