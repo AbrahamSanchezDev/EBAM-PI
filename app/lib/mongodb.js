@@ -23,6 +23,24 @@ export async function connectToDatabase(options = {}) {
   const uri = MONGODB_URI || (useAtlas ? (MONGODB_URI_ATLAS || MONGODB_URI_LOCAL) : MONGODB_URI_LOCAL);
   const cacheKey = uri + "::" + MONGODB_DB;
 
+  // Determine a non-sensitive source label for logging (do not print full URIs)
+  const source = MONGODB_URI
+    ? "MONGODB_URI"
+    : useAtlas
+    ? MONGODB_URI_ATLAS
+      ? "MONGODB_URI_ATLAS"
+      : "MONGODB_URI_LOCAL"
+    : "MONGODB_URI_LOCAL";
+
+  // If running in production / Vercel and no production URI is provided, fail fast
+  const isProduction = process.env.VERCEL === "1" || !!process.env.VERCEL_URL || process.env.NODE_ENV === "production";
+  if (isProduction && !MONGODB_URI && !(useAtlas && MONGODB_URI_ATLAS)) {
+    console.error("Falta MONGODB_URI en entorno de producción. Configure la variable de entorno en Vercel o provea MONGODB_URI_ATLAS.");
+    throw new Error("MONGODB_URI no configurada en el entorno de producción. Configure la variable de entorno 'MONGODB_URI' en su hosting.");
+  }
+
+  console.log("Conectando a MongoDB usando fuente:", source);
+
   if (cachedClients[cacheKey] && cachedDbs[cacheKey]) {
     return { client: cachedClients[cacheKey], db: cachedDbs[cacheKey] };
   }
