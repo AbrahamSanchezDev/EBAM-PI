@@ -133,9 +133,25 @@ export async function authenticate(
     throw error;
   }
 }
-// Use a relative API path so client and server both call the correct deployment URL
-// (avoids needing NEXT_PUBLIC_API_BASE_URL to be set in every environment).
-const apiBaseUrl = ""; // empty means use relative paths like `/api/authenticate`
+// Determine an API base URL depending on runtime:
+// - In the browser (client) we can use relative paths (""),
+// - On the server we need an absolute URL for fetch(), so prefer NEXT_PUBLIC_API_BASE_URL,
+//   otherwise use VERCEL_URL (auto-provided on Vercel) or localhost fallback.
+const getApiBaseUrl = () => {
+  // client-side (browser)
+  if (typeof window !== "undefined") return "";
+
+  // server-side: prefer explicit public URL
+  const envUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (envUrl && envUrl.trim() !== "") return envUrl.replace(/\/$/, "");
+
+  // Vercel exposes VERCEL_URL (e.g. my-app.vercel.app)
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+
+  // local fallback
+  const port = process.env.PORT || "3000";
+  return `http://localhost:${port}`;
+};
 
 export async function authenticateUser(
   params: { email?: string; password?: string } = {}
@@ -162,7 +178,17 @@ export async function authenticateUser(
     throw new Error("Contraseña contiene caracteres inválidos");
   }
 
-  const url = apiBaseUrl ? `${apiBaseUrl}/api/authenticate` : `/api/authenticate`;
+  const base = getApiBaseUrl();
+  let url: string;
+  if (typeof window === "undefined") {
+    // Server runtime: ensure we always use an absolute URL for fetch
+    const resolvedBase = base && base.trim() !== "" ? base : `http://localhost:${process.env.PORT || "3000"}`;
+    url = `${resolvedBase.replace(/\/$/, "")}/api/authenticate`;
+  } else {
+    // Browser: relative path is fine
+    url = `/api/authenticate`;
+  }
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
