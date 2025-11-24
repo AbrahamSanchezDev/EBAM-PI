@@ -66,7 +66,8 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
       }));
       // show desktop notifications for newly received items (not shown before)
       try {
-        const newOnes = normalized.filter((it: any) => !!it.id && !seenRef.current[it.id]);
+        // Solo notificaciones no leídas y no vistas
+        const newOnes = normalized.filter((it: any) => !!it.id && !seenRef.current[it.id] && !it.read);
         if (newOnes.length > 0) {
           // request permission if not granted
           if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
@@ -75,7 +76,6 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
           newOnes.forEach((it: any) => {
             try {
               if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-                // show a simple desktop notification
                 new Notification(it.from ? `${it.from}` : "Notificación", {
                   body: it.message,
                 });
@@ -83,10 +83,8 @@ export const NotificationsProvider = ({ children }: { children: React.ReactNode 
             } catch (e) {
               // ignore
             }
-            // mark as seen so we don't show again
             if (it.id) seenRef.current[it.id] = true;
           });
-          // persist seen ids for this session
           try {
             sessionStorage.setItem("seenNotificationIds", JSON.stringify(seenRef.current));
           } catch (e) {

@@ -184,7 +184,7 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
   return (
     <>
       {/* Información del usuario actual y foto */}
-      <div className="flex items-center my-4 gap-6 w-full">
+      <div className="flex items-center my-4 gap-6 w-full stack-on-mobile">
         <div className="flex flex-1 flex-row bg-[#f7f9fb] rounded-xl p-6 min-w-[320px] items-center shadow-sm relative overflow-visible">
           <div className="absolute right-10 -top-16">
               {foto ? (
@@ -313,7 +313,7 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       )}
 
       {/* Tabla de RFIDs registrados */}
-      <div className="my-4">
+      <div className="my-4 rfid-registrados">
         <h2 className="font-bold text-lg mb-2 text-black">RFID Registrados</h2>
         <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow">
           <thead>
@@ -359,55 +359,41 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
       </div>
       {/* Tabla de Scans del usuario */}
       <div className="my-8">
-        <h2 className="font-bold text-lg mb-2 text-black">
-          Registros de Scans por tus RFIDs
-        </h2>
-        {loadingScans ? (
-          <div>Cargando registros...</div>
-        ) : userScans.length === 0 ? (
-          <div className="text-gray-500">
-            No hay registros de scans para tus RFIDs.
-          </div>
-        ) : (
-          <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden bg-white shadow">
-            <thead>
-              <tr className="bg-[#f7f9fb]">
-                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
-                  #
-                </th>
-                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
-                  RFID
-                </th>
-                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
-                  device_id
-                </th>
-                <th className="px-4 py-2 text-left text-gray-500 font-semibold">
-                  Fecha
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {userScans.map((scan, idx) => (
-                <tr key={scan._id || idx}>
-                  <td className="border-t border-gray-200 px-4 py-2 text-base">
-                    {idx + 1}
-                  </td>
-                  <td className="border-t border-gray-200 px-4 py-2 text-base">
-                    {scan.uid || scan.device_id}
-                  </td>
-                  <td className="border-t border-gray-200 px-4 py-2 text-base">
-                    {scan.device_id || "-"}
-                  </td>
-                  <td className="border-t border-gray-200 px-4 py-2 text-base">
-                    {scan.timestamp
-                      ? new Date(scan.timestamp).toLocaleString()
-                      : "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <div className="bg-white shadow-md rounded-lg p-4 border border-gray-200">
+          <h2 className="font-bold text-lg mb-2 text-black">
+            Registros de Scans por tus RFIDs
+          </h2>
+          {loadingScans ? (
+            <div>Cargando registros...</div>
+          ) : userScans.length === 0 ? (
+            <div className="text-gray-500">
+              No hay registros de scans para tus RFIDs.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <thead>
+                  <tr className="bg-[#f7f9fb]">
+                    <th className="px-4 py-2 text-left text-gray-500 font-semibold">#</th>
+                    <th className="px-4 py-2 text-left text-gray-500 font-semibold">RFID</th>
+                    <th className="px-4 py-2 text-left text-gray-500 font-semibold">device_id</th>
+                    <th className="px-4 py-2 text-left text-gray-500 font-semibold">Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userScans.map((scan, idx) => (
+                    <tr key={scan._id || idx}>
+                      <td className="border-t border-gray-200 px-4 py-2 text-base">{idx + 1}</td>
+                      <td className="border-t border-gray-200 px-4 py-2 text-base">{scan.uid || scan.device_id}</td>
+                      <td className="border-t border-gray-200 px-4 py-2 text-base">{scan.device_id || "-"}</td>
+                      <td className="border-t border-gray-200 px-4 py-2 text-base">{scan.timestamp ? new Date(scan.timestamp).toLocaleString() : "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
