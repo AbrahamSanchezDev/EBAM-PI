@@ -1,4 +1,5 @@
-import HeaderActions from "@/app/ui/header-actions";
+
+import HeaderActionsWrapper from "@/app/ui/dashboard/HeaderActionsWrapper";
 import "@/app/ui/global.css";
 // react-big-calendar global styles must be imported from a top-level entry (app layout)
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -14,14 +15,26 @@ export const metadata: Metadata = {
   description: "The official Next.js Learn Dashboard built with App Router.",
   metadataBase: new URL("https://next-learn-dashboard.vercel.sh"),
 };
+function LayoutWithHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body className={`${inter.className} antialiased`}>
+        <NotificationsProvider>
+          {/** HeaderActionsWrapper es cliente y decide si mostrar los iconos */}
+          {typeof window === "undefined" ? null : <HeaderActionsWrapper />}
+          {children}
+        </NotificationsProvider>
+      </body>
+    </html>
+  );
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <NotificationsProvider>
-          <div className="w-full bg-white border-b p-3 flex justify-end items-center gap-3">
-            <HeaderActions />
-          </div>
+          <HeaderActionsWrapper />
           {children}
         </NotificationsProvider>
       </body>
