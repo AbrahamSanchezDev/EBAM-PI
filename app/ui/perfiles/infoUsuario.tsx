@@ -185,45 +185,13 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
     <>
       {/* Información del usuario actual y foto */}
       <div className="flex items-center my-4 gap-6 w-full stack-on-mobile">
-        <div className="flex flex-1 flex-row bg-[#f7f9fb] rounded-xl p-6 min-w-[320px] items-center shadow-sm relative overflow-visible">
-          <div className="absolute right-10 -top-16">
-              {foto ? (
-                <Image
-                  src={foto}
-                  alt="Foto de perfil"
-                  width={128}
-                  height={128}
-                  className="w-32 h-32 rounded-full object-cover border-2 border-gray-300 bg-white shadow"
-                />
-              ) : (
-                <UserIcon className="w-32 h-32 text-gray-400 bg-white rounded-full border-2 border-gray-300 shadow p-4" />
-              )}
-              
-              <button
-                className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow hover:bg-blue-100 border border-blue-400"
-                title="Cambiar foto"
-                onClick={() => setShowModal(true)}
-                type="button"
-              >
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M15.232 5.232a3 3 0 1 1 4.243 4.243l-9.193 9.193a2 2 0 0 1-.878.515l-3.387.97a1 1 0 0 1-1.213-1.213l.97-3.387a2 2 0 0 1 .515-.878l9.193-9.193z"
-                    stroke="#2563eb"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div className="flex-1 flex flex-col gap-1 mt-8">
+        <div className="flex flex-1 flex-row bg-[#f7f9fb] rounded-xl p-6 min-w-[320px] items-start shadow-sm relative overflow-visible">
+          {/* Información del usuario a la izquierda */}
+          <div className="flex-1 flex flex-col gap-1 justify-start">
             <span className="font-bold text-lg text-black">Nombre:</span>
             <span className="text-base text-black mb-2">{profile?.name || "-"}</span>
             <span className="font-bold text-lg text-black">Email:</span>
-            <span className="text-base text-black mb-2">
-              {profile?.email || "-"}
-            </span>
+            <span className="text-base text-black mb-2">{profile?.email || "-"}</span>
             <span className="font-bold text-lg text-black">Matricula:</span>
             <span className="text-base text-black">{profile?.matricula || "-"}</span>
             <span className="font-bold text-lg text-black">Carrera:</span>
@@ -231,8 +199,38 @@ export function InfoUsuario({ userId }: InfoUsuarioProps) {
             <span className="font-bold text-lg text-black">Grupo:</span>
             <span className="text-base text-black">{profile?.grupo || "-"}</span>
           </div>
+          {/* Foto de perfil en la esquina superior derecha */}
+          <div className="absolute top-6 right-10 flex flex-col items-end">
+            {foto ? (
+              <Image
+                src={foto}
+                alt="Foto de perfil"
+                width={128}
+                height={128}
+                className="w-32 h-32 rounded-full object-cover border-2 border-gray-300 bg-white shadow"
+              />
+            ) : (
+              <UserIcon className="w-32 h-32 text-gray-400 bg-white rounded-full border-2 border-gray-300 shadow p-4" />
+            )}
+            <button
+              className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow hover:bg-blue-100 border border-blue-400"
+              title="Cambiar foto"
+              onClick={() => setShowModal(true)}
+              type="button"
+            >
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="M15.232 5.232a3 3 0 1 1 4.243 4.243l-9.193 9.193a2 2 0 0 1-.878.515l-3.387.97a1 1 0 0 1-1.213-1.213l.97-3.387a2 2 0 0 1 .515-.878l9.193-9.193z"
+                  stroke="#2563eb"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
-      
+      </div>
 
       {/* Modal para cambiar foto */}
       {showModal && (
