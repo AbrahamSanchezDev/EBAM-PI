@@ -1,5 +1,50 @@
 "use client";
 import { useEffect, useState } from "react";
+type DebugModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onTestRFID: () => void;
+  onCreateUsers: () => void;
+};
+
+function DebugModal({ open, onClose, onTestRFID, onCreateUsers }: DebugModalProps) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+        <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-yellow-500 to-amber-400">
+          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
+            <span className="text-black text-2xl font-bold">!</span>
+          </div>
+          <div>
+            <h3 className="text-black text-lg font-bold">Debugeo</h3>
+            <p className="text-black text-sm">Herramientas de prueba para RFID y usuarios</p>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+          <button
+            onClick={onTestRFID}
+            className="w-full px-5 py-3 bg-blue-600 text-white rounded shadow hover:bg-blue-700 font-semibold transition"
+          >
+            Ejecutar Prueba RFID
+          </button>
+          <button
+            onClick={onCreateUsers}
+            className="w-full px-5 py-3 bg-green-600 text-white rounded shadow hover:bg-green-700 font-semibold transition"
+          >
+            Crear Usuarios de Prueba
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full px-5 py-3 bg-gray-400 text-white rounded shadow hover:bg-gray-500 font-semibold transition"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 import { useRouter } from "next/navigation";
 import { useCurrentUserProfile } from "@/app/lib/userState";
 
@@ -142,6 +187,7 @@ export default function ScansPage() {
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [scans, setScans] = useState<Scan[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [debugModalOpen, setDebugModalOpen] = useState(false);
   // Search/filter state
   const [searchUid, setSearchUid] = useState("");
   const [filteredScans, setFilteredScans] = useState<Scan[]>([]);
@@ -452,27 +498,16 @@ export default function ScansPage() {
           onPrint={handlePrint}
         />
         <button
-          onClick={handleTestRFIDPost}
-          className="px-5 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 font-semibold transition"
+          onClick={() => setDebugModalOpen(true)}
+          className="px-5 py-2 bg-gray-800 text-white rounded shadow hover:bg-gray-900 font-semibold transition"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 inline-block mr-2 -mt-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m4 0h-1v-4h-1m4 0h-1v-4h-1"
-            />
-          </svg>
-          Ejecutar Prueba RFID
+          Debugeo
         </button>
-        <button
-          onClick={async () => {
+        <DebugModal
+          open={debugModalOpen}
+          onClose={() => setDebugModalOpen(false)}
+          onTestRFID={handleTestRFIDPost}
+          onCreateUsers={async () => {
             try {
               const response = await fetch("/api/create-users", { method: "POST" });
               if (!response.ok) {
@@ -485,24 +520,7 @@ export default function ScansPage() {
               alert("Error al crear usuarios. Revisa la consola para más detalles.");
             }
           }}
-          className="px-5 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 font-semibold transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 inline-block mr-2 -mt-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          Crear Usuarios de Prueba
-        </button>
+        />
       </div>
     </div>
   );

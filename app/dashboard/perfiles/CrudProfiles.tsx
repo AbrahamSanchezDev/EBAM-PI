@@ -349,7 +349,7 @@ const CrudProfiles = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 administrar-perfiles">
       <h1 className="text-2xl font-bold mb-4">Administrar Perfiles</h1>
       <button
         onClick={() => setIsModalOpen(true)}
@@ -358,7 +358,8 @@ const CrudProfiles = () => {
         Crear Perfil
       </button>
 
-      <table className="w-full border-collapse border border-gray-300">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse border border-gray-300">
         <thead>
           <tr className="bg-blue-100 text-blue-700">
             <th className="border border-gray-300 p-3">Nombre</th>
@@ -370,45 +371,42 @@ const CrudProfiles = () => {
         <tbody>
           {profiles.map((profile) => (
             <tr key={profile._id} className="bg-blue-50">
-              <td className="border border-gray-300 p-3">{profile.name}</td>
-              <td className="border border-gray-300 p-3">{profile.email}</td>
-              <td className="border border-gray-300 p-3">{profile.role}</td>
-              <td className="border border-gray-300 p-3">
-                <div className="flex items-center space-x-2">
+              <td data-label="Nombre" className="border border-gray-300 p-3">{profile.name}</td>
+              <td data-label="Correo" className="border border-gray-300 p-3">{profile.email}</td>
+              <td data-label="Rol" className="border border-gray-300 p-3">{profile.role}</td>
+              <td data-label="Acciones" className="border border-gray-300 p-3">
+                <div className="actions flex flex-col sm:flex-row flex-wrap gap-2 w-full">
                   <button
                     onClick={() => openExtraFieldsModal(profile._id!)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 mr-2"
+                    className="px-3 py-1 bg-blue-500 text-white rounded shadow hover:bg-blue-600 w-full sm:w-auto"
                   >
                     Agregar RFID y Calendarios
                   </button>
                   <button
                     onClick={() => openFeaturesModal(profile._id!)}
-                    className="px-3 py-1 bg-purple-600 text-white rounded shadow hover:bg-purple-700 mr-2"
+                    className="px-3 py-1 bg-purple-600 text-white rounded shadow hover:bg-purple-700 w-full sm:w-auto"
                   >
                     Editar Features
                   </button>
                   <button
                     onClick={() => handleEdit(profile)}
-                    className="px-3 py-1 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 mr-2"
+                    className="px-3 py-1 bg-yellow-500 text-white rounded shadow hover:bg-yellow-600 w-full sm:w-auto"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleDelete(profile._id!)}
-                    className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 mr-2"
+                    className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600 w-full sm:w-auto"
                   >
                     Eliminar
                   </button>
-                </div>
-
-                {/* Debugeo: opens modal with notification input, send and test actions */}
-                <div className="mt-2">
+                  {/* Debugeo: ahora debajo de Eliminar */}
                   <button
                     onClick={() => {
                       setDebugeoTarget(profile as Profile);
                       setIsDebugeoOpen(true);
                     }}
-                    className="px-3 py-1 bg-gray-800 text-white rounded shadow hover:bg-gray-900"
+                    className="px-3 py-1 bg-gray-800 text-white rounded shadow hover:bg-gray-900 w-full sm:w-auto"
                   >
                     Debugeo
                   </button>
@@ -417,11 +415,12 @@ const CrudProfiles = () => {
             </tr>
           ))}
         </tbody>
-      </table>
+          </table>
+        </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 relative">
             <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-600 to-sky-500">
               <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
                 <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -463,18 +462,6 @@ const CrudProfiles = () => {
                   required
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Notificaciones (min antes)</label>
-                    <input
-                      type="number"
-                      name="calendarNotificationMinutes"
-                      value={form.calendarNotificationMinutes ?? ""}
-                      onChange={handleInputChange}
-                      placeholder="Ej: 10"
-                      min={0}
-                      className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-200"
-                    />
-                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Rol</label>
                     <select
@@ -535,15 +522,16 @@ const CrudProfiles = () => {
         </div>
       )}
       {isExtraFieldsModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-4xl">
-            <h2 className="text-xl font-bold mb-4">Agregar RFID y Calendarios</h2>
-            <div>
-              <div className="flex items-center space-x-2">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto overflow-y-auto max-h-[95vh] border border-blue-100">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center text-blue-700">Agregar RFID y Calendarios</h2>
+            <div className="mb-8">
+              <h3 className="font-semibold text-base text-blue-600 mb-2">RFIDs del usuario</h3>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
                 <input
                   type="text"
-                  placeholder="Agregar RFID"
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Agregar nuevo RFID"
+                  className="w-full p-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50"
                   id="rfidInput"
                 />
                 <button
@@ -556,45 +544,55 @@ const CrudProfiles = () => {
                       input.value = "";
                     }
                   }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 font-semibold text-base"
                 >
                   Agregar
                 </button>
               </div>
-              <table className="w-full border-collapse border border-gray-300 mt-4">
-                <tbody>
-                  {form.rfids.map((rfid, index) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 p-2">{rfid.id}</td>
-                      <td className="border border-gray-300 p-2">
-                        <button
-                          onClick={() => handleToggleActive(index)}
-                          className={`px-2 py-1 rounded ${
-                            rfid.active ? "bg-green-500" : "bg-red-500"
-                          } text-white`}
-                        >
-                          {rfid.active ? "Activo" : "Inactivo"}
-                        </button>
-                      </td>
-                      <td className="border border-gray-300 p-2">
-                        <button
-                          onClick={() => handleRemoveFromList("rfids", index)}
-                          className="px-2 py-1 bg-red-500 text-white rounded"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
+              <div className="overflow-x-auto rounded-lg border border-blue-100 bg-blue-50">
+                <table className="w-full border-collapse mt-2 text-sm">
+                  <thead>
+                    <tr className="bg-blue-100">
+                      <th className="p-2 text-left font-semibold text-blue-700">RFID</th>
+                      <th className="p-2 text-left font-semibold text-blue-700">Estado</th>
+                      <th className="p-2 text-left font-semibold text-blue-700">Acción</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {form.rfids.length === 0 ? (
+                      <tr><td colSpan={3} className="p-2 text-center text-gray-400">No hay RFIDs agregados</td></tr>
+                    ) : form.rfids.map((rfid, index) => (
+                      <tr key={index}>
+                        <td className="border-t border-blue-100 p-2 break-all">
+                          <div className="flex flex-row items-center gap-2">
+                            <span className="flex-1">{rfid.id}</span>
+                            <button
+                              onClick={() => handleToggleActive(index)}
+                              className={`px-2 py-1 rounded-lg font-semibold ${rfid.active ? "bg-green-500" : "bg-red-500"} text-white`}
+                            >
+                              {rfid.active ? "Activo" : "Inactivo"}
+                            </button>
+                            <button
+                              onClick={() => handleRemoveFromList("rfids", index)}
+                              className="px-2 py-1 bg-red-400 hover:bg-red-500 text-white rounded-lg font-semibold"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="mt-6">
-              <div className="flex items-center space-x-2">
+            <div className="mb-8">
+              <h3 className="font-semibold text-base text-blue-600 mb-2">IDs de Calendario</h3>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
                 <input
                   type="text"
-                  placeholder="Agregar ID de Calendario"
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="Agregar nuevo ID de Calendario"
+                  className="w-full p-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-50"
                   id="calendarIdInput"
                 />
                 <button
@@ -607,39 +605,51 @@ const CrudProfiles = () => {
                       input.value = "";
                     }
                   }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 font-semibold text-base"
                 >
                   Agregar
                 </button>
               </div>
-              <table className="w-full border-collapse border border-gray-300 mt-4">
-                <tbody>
-                  {form.calendarIds.map((id, index) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 p-2">{id}</td>
-                      <td className="border border-gray-300 p-2">
-                        <button
-                          onClick={() => handleRemoveFromList("calendarIds", index)}
-                          className="px-2 py-1 bg-red-500 text-white rounded"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
+              <div className="overflow-x-auto rounded-lg border border-blue-100 bg-blue-50">
+                <table className="w-full border-collapse mt-2 text-sm">
+                  <thead>
+                    <tr className="bg-blue-100">
+                      <th className="p-2 text-left font-semibold text-blue-700">ID de Calendario</th>
+                      <th className="p-2 text-left font-semibold text-blue-700">Acción</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {form.calendarIds.length === 0 ? (
+                      <tr><td colSpan={2} className="p-2 text-center text-gray-400">No hay IDs de calendario agregados</td></tr>
+                    ) : form.calendarIds.map((id, index) => (
+                      <tr key={index}>
+                        <td className="border-t border-blue-100 p-2 break-all">
+                          <div className="flex flex-row items-center gap-2">
+                            <span className="flex-1">{id}</span>
+                            <button
+                              onClick={() => handleRemoveFromList("calendarIds", index)}
+                              className="px-2 py-1 bg-red-400 hover:bg-red-500 text-white rounded-lg font-semibold"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="flex space-x-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4">
               <button
                 onClick={updateRFIDsAndCalendarIds}
-                className="px-6 py-3 bg-blue-500 text-white rounded shadow hover:bg-blue-600"
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 font-bold text-base"
               >
                 Guardar
               </button>
               <button
                 onClick={closeExtraFieldsModal}
-                className="px-6 py-3 bg-gray-500 text-white rounded shadow hover:bg-gray-600"
+                className="w-full sm:w-auto px-6 py-3 bg-gray-400 text-white rounded-lg shadow hover:bg-gray-500 font-bold text-base"
               >
                 Cerrar
               </button>
@@ -814,26 +824,29 @@ const CrudProfiles = () => {
         </div>
       )}
       {isFeaturesModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Editar Features</h2>
-            <div className="space-y-2">
-              {availableFeatures.map((f) => (
-                <label key={f.key} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedFeatures.includes(f.key)}
-                    onChange={() => toggleFeature(f.key)}
-                  />
-                  <span>{f.name}</span>
-                </label>
-              ))}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-2xl w-full max-w-lg sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto overflow-y-auto max-h-[95vh] border border-blue-100">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center text-blue-700">Editar Features</h2>
+            <div className="mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {availableFeatures.map((f) => (
+                  <label key={f.key} className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 cursor-pointer hover:bg-blue-100 transition">
+                    <input
+                      type="checkbox"
+                      checked={selectedFeatures.includes(f.key)}
+                      onChange={() => toggleFeature(f.key)}
+                      className="accent-blue-600 w-5 h-5"
+                    />
+                    <span className="text-blue-900 font-medium text-base">{f.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-            <div className="flex space-x-4 mt-4">
-              <button onClick={saveFeatures} className="px-6 py-3 bg-blue-500 text-white rounded">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4">
+              <button onClick={saveFeatures} className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 font-bold text-base">
                 Guardar
               </button>
-              <button onClick={closeFeaturesModal} className="px-6 py-3 bg-gray-500 text-white rounded">
+              <button onClick={closeFeaturesModal} className="w-full sm:w-auto px-6 py-3 bg-gray-400 text-white rounded-lg shadow hover:bg-gray-500 font-bold text-base">
                 Cancelar
               </button>
             </div>

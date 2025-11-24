@@ -16,3 +16,76 @@ input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Custom small breakpoint: stack certain dashboard sections vertically when width <= 500px */
+@media (max-width: 500px) {
+  /* When parent uses flex row, force column on these sections */
+  .stack-on-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Ensure these sections take full width and their internal blocks flow vertically */
+  .rfid-registrados,
+  .administrar-perfiles {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Make user info card and tables expand to full width on very small screens */
+  .rfid-registrados table,
+  .administrar-perfiles table,
+  .rfid-registrados .flex,
+  .administrar-perfiles .flex {
+    width: 100% !important;
+  }
+
+  /* Responsive table: convert table to stacked key/value rows for very small screens */
+  .administrar-perfiles table {
+    display: block;
+    overflow: visible;
+  }
+
+  .administrar-perfiles thead {
+    display: none;
+  }
+
+  .administrar-perfiles tbody {
+    display: block;
+  }
+
+  .administrar-perfiles tbody tr {
+    display: block;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .administrar-perfiles tbody tr td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .administrar-perfiles tbody tr td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    margin-right: 0.5rem;
+    color: #374151;
+  }
+
+  /* Stack and stretch action buttons inside the actions container */
+  .administrar-perfiles tbody tr td[data-label="Acciones"] .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .administrar-perfiles tbody tr td[data-label="Acciones"] .actions > * {
+    width: 100%;
+    text-align: center;
+  }
+}
