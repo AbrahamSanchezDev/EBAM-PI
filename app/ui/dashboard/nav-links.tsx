@@ -66,10 +66,10 @@ export default function NavLinks({ activeClassName, iconClassName }: NavLinksPro
               // base layout: allow mobile items to either center (icons-only) or left-align when showing text
               "flex h-[48px] grow items-center gap-2 rounded-md bg-gray-50 p-3 text-sm font-medium hover:bg-[#eaf1fa] hover:text-[#1d4a7a] md:flex-none md:p-2 md:px-3",
               {
-                // center icons on mobile when text hidden
-                "justify-center": !showTextOnMobile,
-                // left-align when showing text on mobile
-                "justify-start": showTextOnMobile,
+                // // center icons on mobile when text hidden
+                // "justify-center": showTextOnMobile,
+                // // left-align when showing text on mobile
+                // "justify-start": showTextOnMobile,
                 [activeClassName || "!bg-[#eaf1fa] !text-[#1d4a7a] !font-semibold"]: pathname === link.href,
               }
             )}
