@@ -3,7 +3,6 @@ import "@/app/ui/global.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { inter } from "@/app/ui/fonts";
 import { NotificationsProvider } from "@/app/lib/notificationsClient";
-import HeaderActions from "@/app/ui/header-actions";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,9 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
         <NotificationsProvider>
-          <div className="w-full bg-white border-b p-3 flex justify-end items-center gap-3">
-            <HeaderActions />
-          </div>
+          {/* HeaderActions removido para ocultar iconos de notificaciones y solicitudes */}
           {children}
         </NotificationsProvider>
       </body>

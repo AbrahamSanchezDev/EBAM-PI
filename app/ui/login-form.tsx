@@ -14,8 +14,8 @@ import { useState, startTransition } from "react";
 import { setCurrentUser } from "@/app/lib/userState";
 
 export default function LoginForm() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  // Siempre redirigir a /dashboard después de login
+  const callbackUrl = "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
