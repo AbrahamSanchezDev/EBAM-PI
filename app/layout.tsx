@@ -19,11 +19,13 @@ function LayoutWithHeader({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <NotificationsProvider>
-          {/** HeaderActionsWrapper es cliente y decide si mostrar los iconos */}
-          {typeof window === "undefined" ? null : <HeaderActionsWrapper />}
-          {children}
-        </NotificationsProvider>
+        <div className="w-full">
+          <NotificationsProvider>
+            {/** HeaderActionsWrapper es cliente y decide si mostrar los iconos */}
+            {typeof window === "undefined" ? null : <HeaderActionsWrapper />}
+            {children}
+          </NotificationsProvider>
+        </div>
       </body>
     </html>
   );
@@ -33,10 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <NotificationsProvider>
-          <HeaderActionsWrapper />
-          {children}
-        </NotificationsProvider>
+        <div className="w-full
+        ">
+          <NotificationsProvider>
+            <HeaderActionsWrapper />
+            {children}
+          </NotificationsProvider>
+        </div>
       </body>
     </html>
   );

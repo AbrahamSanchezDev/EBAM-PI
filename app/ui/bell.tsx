@@ -47,54 +47,56 @@ export default function Bell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 bg-white border rounded-lg shadow-xl z-50">
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <div>
-              <div className="text-sm font-semibold text-gray-800">Notificaciones</div>
-              <div className="text-xs text-gray-500">Últimas notificaciones</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center md:absolute md:right-0 md:mt-2 md:w-96 md:items-start md:justify-end bg-black bg-opacity-40 md:bg-transparent">
+          <div className="w-full max-w-md md:w-96 bg-white border rounded-lg shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <div>
+                <div className="text-sm font-semibold text-gray-800">Notificaciones</div>
+                <div className="text-xs text-gray-500">Últimas notificaciones</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="text-sm text-blue-600" onClick={() => { markAllRead(); window.dispatchEvent(new CustomEvent('notifications:changed')); }}>
+                  Marcar todas como leídas
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="text-sm text-blue-600" onClick={() => { markAllRead(); window.dispatchEvent(new CustomEvent('notifications:changed')); }}>
-                Marcar todas como leídas
-              </button>
-            </div>
-          </div>
-          <div className="max-h-80 overflow-auto">
-            {items.length === 0 && (
-              <div className="p-6 text-center text-sm text-gray-500">No hay notificaciones</div>
-            )}
-            <div className="divide-y">
-              {items.map((n) => (
-                <div key={n.id} className={`px-4 py-3 flex gap-3 items-start ${n.read ? "bg-white" : "bg-blue-50"}`}>
-                  <div className="flex-shrink-0">
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center ${n.read ? 'bg-gray-100' : 'bg-blue-600 text-white'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 6v.01" />
-                      </svg>
+            <div className="max-h-80 overflow-auto">
+              {items.length === 0 && (
+                <div className="p-6 text-center text-sm text-gray-500">No hay notificaciones</div>
+              )}
+              <div className="divide-y">
+                {items.map((n) => (
+                  <div key={n.id} className={`px-4 py-3 flex gap-3 items-start ${n.read ? "bg-white" : "bg-blue-50"}`}>
+                    <div className="flex-shrink-0">
+                      <div className={`h-9 w-9 rounded-full flex items-center justify-center ${n.read ? 'bg-gray-100' : 'bg-blue-600 text-white'}`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 6v.01" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <button className="w-full text-left" onClick={() => openModal(n)}>
+                        <div className="flex justify-between items-start">
+                          <div className="text-sm font-medium text-gray-800">{truncate(n.message, 60)}</div>
+                          <div className="text-xs text-gray-400">{new Date(n.createdAt).toLocaleTimeString()}</div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{n.from}</div>
+                      </button>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <button className="w-full text-left" onClick={() => openModal(n)}>
-                      <div className="flex justify-between items-start">
-                        <div className="text-sm font-medium text-gray-800">{truncate(n.message, 60)}</div>
-                        <div className="text-xs text-gray-400">{new Date(n.createdAt).toLocaleTimeString()}</div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">{n.from}</div>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="px-4 py-2 border-t text-right">
-            <button className="text-sm text-blue-600" onClick={() => { setOpen(false); }}>Cerrar</button>
+            <div className="px-4 py-2 border-t text-right">
+              <button className="text-sm text-blue-600" onClick={() => { setOpen(false); }}>Cerrar</button>
+            </div>
           </div>
         </div>
       )}
 
       {modalItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-2 md:px-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg md:max-w-2xl overflow-hidden">
             <div className="flex items-center gap-4 p-4 border-b">
               <div className="bg-blue-600 text-white rounded-full p-2 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

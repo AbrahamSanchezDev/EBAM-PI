@@ -4,7 +4,8 @@
     "build": "next build",
     "dev": "next dev --turbopack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -32,18 +33,24 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/bcrypt": "^5.0.2",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "22.10.7",
     "@types/react": "^19.1.8",
     "@types/react-big-calendar": "^1.16.2",
     "@types/react-dom": "^19.1.6",
+    "@vitest/ui": "^4.0.15",
     "eslint": "^9.29.0",
     "eslint-config-next": "15.4.0-canary.51",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.2.0",
+    "jsdom": "^27.2.0",
     "typescript": "~5.8.3",
-    "typescript-eslint": "^8.34.1"
+    "typescript-eslint": "^8.34.1",
+    "vitest": "^4.0.15"
   },
   "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
 }

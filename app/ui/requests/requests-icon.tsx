@@ -31,7 +31,8 @@ export default function RequestsIcon() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[560px] bg-white border rounded-lg shadow-xl p-3 z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center md:absolute md:right-0 md:mt-2 md:w-[560px] md:items-start md:justify-end bg-black bg-opacity-40 md:bg-transparent">
+          <div className="w-full max-w-lg md:w-[560px] bg-white border rounded-lg shadow-xl p-3">
           <div className="flex items-center justify-between px-3 py-2 border-b">
             <div>
               <div className="text-sm font-semibold text-gray-800">Solicitudes de eventos</div>
@@ -85,6 +86,7 @@ export default function RequestsIcon() {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
       )}
